@@ -6,13 +6,13 @@ set -e
 echo "--- Módulo 1: Configuración del Sistema Base ---"
 
 # --- Listas de paquetes del sistema ---
-# Herramientas para compilar software, esenciales para AUR o para instalar paquetes con pip
+# Herramientas para compilar software, esenciales para AUR o para instalar paquetes con pip-
 pkgs_build_arch=(base-devel)
 pkgs_build_debian=(build-essential)
 
-# Paquetes básicos para cualquier sistema
-pkgs_essentials_arch=(git curl zsh bluez bluez-utils)
-pkgs_essentials_debian=(git curl zsh bluez)
+# Paquetes básicos (¡kitty añadido aquí!)
+pkgs_essentials_arch=(git curl zsh kitty bluez bluez-utils)
+pkgs_essentials_debian=(git curl zsh kitty bluez)
 
 # --- Instalación de paquetes nativos ---
 echo "⚙️  Instalando paquetes esenciales del sistema..."
