@@ -59,13 +59,6 @@ elif [ "$DISTRO" == "debian" ]; then
     sudo apt-get install -y neovim nodejs npm
 fi
 
-# Instalar Pyright globalmente con npm
-if ! command -v pyright &> /dev/null; then
-    sudo npm install -g pyright
-fi
-echo "✅ Dependencias de LunarVim instaladas."
-
-
 # Instala LunarVim si no está ya instalado
 if ! command -v lvim &> /dev/null; then
     echo "⚙️  Instalando LunarVim (lvim)..."
@@ -84,6 +77,10 @@ echo "⚙️  Configurando $PATH para Flatpak y LunarVim en .zshrc..."
 cat << 'EOF' >> ~/.zshrc
 
 # --- Configuración de $PATH ---
+
+if ! grep -q "pipx ensurepath" "$HOME/.zshrc"; then
+    echo 'eval "$(pipx ensurepath)"' >> ~/.zshrc
+fi
 
 # Añade la carpeta local de binarios (para lvim y otros scripts)
 if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then

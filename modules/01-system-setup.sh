@@ -10,9 +10,9 @@ pkgs_build_arch=(base-devel)
 pkgs_build_debian=(build-essential)
 
 # Paquetes básicos
-# AÑADIMOS 'python-pip' y 'python3-pip' para las dependencias de npm (node-gyp)
-pkgs_essentials_arch=(git curl zsh kitty bluez bluez-utils python-pip)
-pkgs_essentials_debian=(git curl zsh kitty bluez software-properties-common python3-pip)
+pkgs_essentials_arch=(git curl zsh kitty bluez bluez-utils python-pip pipx)
+# AÑADIMOS 'pipx'
+pkgs_essentials_debian=(git curl zsh kitty bluez software-properties-common python3-pip python3-venv pipx)
 
 # --- Instalación de paquetes nativos ---
 echo "⚙️  Instalando paquetes esenciales del sistema (incl. zsh, kitty y pip)..."
