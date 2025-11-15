@@ -6,26 +6,26 @@ set -e
 echo "--- Módulo 1: Configuración del Sistema Base ---"
 
 # --- Listas de paquetes del sistema ---
-# Herramientas para compilar software, esenciales para AUR o para instalar paquetes con pip-
 pkgs_build_arch=(base-devel)
 pkgs_build_debian=(build-essential)
 
-# Paquetes básicos (¡kitty añadido aquí!)
-pkgs_essentials_arch=(git curl zsh kitty bluez bluez-utils)
-pkgs_essentials_debian=(git curl zsh kitty bluez)
+# Paquetes básicos
+# AÑADIMOS 'python-pip' y 'python3-pip' para las dependencias de npm (node-gyp)
+pkgs_essentials_arch=(git curl zsh kitty bluez bluez-utils python-pip)
+pkgs_essentials_debian=(git curl zsh kitty bluez software-properties-common python3-pip)
 
 # --- Instalación de paquetes nativos ---
-echo "⚙️  Instalando paquetes esenciales del sistema..."
+echo "⚙️  Instalando paquetes esenciales del sistema (incl. zsh, kitty y pip)..."
 
 if [ "$DISTRO" == "arch" ]; then
     sudo pacman -Syu --noconfirm --needed "${pkgs_build_arch[@]}" "${pkgs_essentials_arch[@]}"
 elif [ "$DISTRO" == "debian" ]; then
     sudo apt-get update
-    sudo apt-get install -y "${pkgs_build_debian[@]}" "${pkgs_essentials_debian[@]}"*
-
+    sudo apt-get install -y "${pkgs_build_debian[@]}" "${pkgs_essentials_debian[@]}"
+    
+    # Añadir el PPA de Fastfetch
     echo "⚙️  Añadiendo PPA de Fastfetch para Ubuntu/Debian..."
     sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
-    # Necesitamos actualizar OTRA VEZ para que apt conozca los paquetes del PPA
     sudo apt-get update
 fi
 
@@ -35,7 +35,6 @@ echo "✅ Paquetes esenciales instalados."
 if [ "$DISTRO" == "arch" ]; then
     if ! command -v yay &> /dev/null; then
         echo "⚙️  Instalando yay..."
-        # Clonamos, construimos e instalamos yay, luego limpiamos
         git clone https://aur.archlinux.org/yay.git /tmp/yay
         (cd /tmp/yay && makepkg -si --noconfirm)
         rm -rf /tmp/yay
@@ -53,7 +52,6 @@ if ! command -v flatpak &> /dev/null; then
     elif [ "$DISTRO" == "debian" ]; then
         sudo apt-get install -y flatpak
     fi
-    # Añadimos el repositorio de Flathub, la tienda principal de Flatpak
     flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
     echo "✅ Flatpak instalado y configurado."
 else
