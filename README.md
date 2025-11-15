@@ -33,8 +33,8 @@ Before you run the script, you'll need:
     Bash
     
     ```
-    git clone https://github.com/YOUR_USERNAME/global-linux-desktop.git
-    cd global-linux-desktop
+    git clone https://github.com/SamuelValleHdz/universal-linux-setup.git
+    cd universal-linux-setup.git
     ```
     
 2. Make the main script executable:
