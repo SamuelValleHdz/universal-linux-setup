@@ -64,7 +64,7 @@ if ! command -v lvim &> /dev/null; then
     echo "⚙️  Instalando LunarVim (lvim)..."
     # Usamos la misma rama que tenías definida
     # Añadimos '--yes' para hacerlo no-interactivo
-    LV_BRANCH='release-1.3/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.3/neovim-0.9/utils/installer/install.sh) --yes
+    LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh)
     echo "✅ LunarVim instalado."
 else
     echo "👌 LunarVim (lvim) ya está instalado."
