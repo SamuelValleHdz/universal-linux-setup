@@ -179,4 +179,12 @@ esac
 install_flatpaks "${final_flatpak_list[@]}"
 install_native_utils "$native_profile_type"
 
+echo "⚙️  Actualizando la base de datos de Flatpak para crear 'alias' (symlinks)..."
+# Este comando fuerza a Flatpak a generar los enlaces cortos (ej: 'code')
+# que se colocan en /var/lib/flatpak/exports/bin
+# y que el $PATH del Módulo 3 utiliza.
+flatpak update --appstream
+
+echo "✅ 'Alias' de Flatpak generados."
+
 echo "--- Módulo 2 Finalizado ---"
