@@ -6,7 +6,6 @@ set -e
 echo "--- Módulo 3: Configuración de la Terminal ---"
 
 # --- Zsh y Oh My Zsh ---
-# (Toda la sección de Zsh y Oh My Zsh sigue igual...)
 if [ "$SHELL" != "/bin/zsh" ]; then
     echo "⚙️  Cambiando el shell por defecto a Zsh..."
     ZSH_PATH=$(which zsh)
@@ -28,7 +27,6 @@ else
 fi
 
 # --- Plugins para Oh My Zsh ---
-# (La sección de plugins sigue igual...)
 ZSH_CUSTOM=${ZSH_CUSTOM:-~/.oh-my-zsh/custom}
 
 if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
@@ -62,25 +60,38 @@ fi
 # Instala LunarVim si no está ya instalado
 if ! command -v lvim &> /dev/null; then
     echo "⚙️  Instalando LunarVim (lvim)..."
-    # Usamos la misma rama que tenías definida
-    # Añadimos '--yes' para hacerlo no-interactivo
-    LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh)
+    # Usando la rama 'release-1.4'
+    LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh) --yes
     echo "✅ LunarVim instalado."
 else
     echo "👌 LunarVim (lvim) ya está instalado."
 fi
 
 
-# Añade las rutas de Flatpak y .local/bin al .zshrc
-echo "⚙️  Configurando $PATH para Flatpak y LunarVim en .zshrc..."
+# --- Configuración de $PATH ---
+echo "⚙️  Configurando $PATH para Flatpak, pipx y LunarVim en .zshrc..."
 
-cat << 'EOF' >> ~/.zshrc
+# --- pipx ---
+# Corre pipx ensurepath y añade su eval al .zshrc si no está ya
+# Esta comprobación ahora está FUERA del 'cat'
+if ! grep -q 'eval "$(pipx ensurepath)"' "$HOME/.zshrc"; then
+    echo 'eval "$(pipx ensurepath)"' >> "$HOME/.zshrc"
+    echo "✅ Añadido pipx ensurepath a .zshrc"
+else
+    echo "👌 pipx ensurepath ya está en .zshrc."
+fi
+
+# --- Flatpak y .local/bin ---
+# Usamos un "marcador" para evitar añadir este bloque varias veces.
+# El script solo añadirá el bloque si NO encuentra el marcador.
+if ! grep -q "# --- Fin de la configuración de \$PATH ---" "$HOME/.zshrc"; then
+    echo "-> Añadiendo bloque de \$PATH para Flatpak y lvim..."
+    
+    # Ahora el 'cat' solo añade lo que debe.
+    cat << 'EOF' >> ~/.zshrc
 
 # --- Configuración de $PATH ---
-
-if ! grep -q "pipx ensurepath" "$HOME/.zshrc"; then
-    echo 'eval "$(pipx ensurepath)"' >> ~/.zshrc
-fi
+# (Bloque añadido por el script global-linux-desktop)
 
 # Añade la carpeta local de binarios (para lvim y otros scripts)
 if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
@@ -98,9 +109,10 @@ if [ -d "$HOME/.local/share/flatpak/exports/bin" ] && [[ ":$PATH:" != *":$HOME/.
 fi
 # --- Fin de la configuración de $PATH ---
 EOF
-
-echo "✅ $PATH de Flatpak y .local/bin configurado en .zshrc"
-# ==== FIN DE MODIFICACIÓN 2 ====
+    echo "✅ $PATH de Flatpak y .local/bin configurado en .zshrc"
+else
+    echo "👌 El bloque de \$PATH para Flatpak y lvim ya existe en .zshrc. Saltando."
+fi
 
 
 echo "--- Módulo 3 Finalizado ---"
