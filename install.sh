@@ -1,12 +1,46 @@
 #!/bin/bash
-
 # Activa el modo estricto
 set -e
 
-# Establece el directorio de trabajo
-WORKDIR=$(dirname "$0")
+# --- 1. Lógica de Auto-Reubicación ---
+# Define la "casa" permanente para este repositorio
+DEST_DIR="$HOME/.dotfiles"
 
-# --- Detección del Sistema Operativo ---
+# Obtiene el directorio actual (absoluto) del script
+CURRENT_DIR=$(cd "$(dirname "$0")" && pwd)
+
+# Comprueba si el script YA está en su casa permanente
+if [ "$CURRENT_DIR" != "$DEST_DIR" ]; then
+    echo "--- Reubicando el Repositorio de Instalación ---"
+    echo "Moviendo el script a su ubicación permanente: $DEST_DIR"
+    
+    # Asegura que el directorio exista
+    mkdir -p "$DEST_DIR"
+    
+    # Usa rsync para copiar/sincronizar el repo completo
+    # -a (archive) preserva permisos
+    # --delete asegura que el destino sea una copia exacta
+    # El "/" al final de CURRENT_DIR es importante: copia el *contenido*
+    rsync -a --delete "$CURRENT_DIR/" "$DEST_DIR/"
+    
+    echo "✅ Reubicación completa. Reiniciando el script desde la nueva ubicación..."
+    echo "-------------------------------------------------------------------"
+    sleep 2
+    
+    # 'exec' reemplaza el proceso actual con el nuevo
+    # Pasa todos los argumentos originales (si los hubiera)
+    exec "$DEST_DIR/install.sh" "$@"
+fi
+
+# --- 2. Configuración Principal ---
+# Si el script llega aquí, significa que ya está en $DEST_DIR
+echo "--- Script ejecutándose desde la ubicación permanente ($DEST_DIR) ---"
+
+# Exporta el WORKDIR absoluto para que los módulos (como 04)
+# puedan usarlo para crear alias (como 'update')
+export WORKDIR="$CURRENT_DIR"
+
+# --- 3. Detección del Sistema Operativo ---
 export DISTRO=""
 
 if command -v pacman &> /dev/null; then
@@ -20,8 +54,8 @@ else
     exit 1
 fi
 
-# --- Interfaz de Usuario (TUI) para seleccionar el Perfil ---
-clear # Limpia la pantalla antes de mostrar el menú
+# --- 4. Interfaz de Usuario (TUI) para seleccionar el Perfil ---
+clear 
 echo "Bienvenido al Script de Instalación."
 echo "Selecciona el perfil de instalación deseado:"
 echo ""
@@ -31,12 +65,13 @@ options=(
     "Work (Minimal + Obsidian, OnlyOffice)"
     "Creative (Minimal + Inkscape, Krita)"
     "Gaming (Minimal + Lutris, Heroic, Prism)"
+    "Virtualization (Minimal + VirtualBox)"
     "Full (Instalar TODO)"
     "Solo Terminal (Utilidades nativas)"
     "Salir"
 )
 
-PS3="Elige una opción (1-7): "
+PS3="Elige una opción (1-8): "
 select choice in "${options[@]}"; do
     case $choice in
         "${options[0]}") # Minimal
@@ -55,15 +90,19 @@ select choice in "${options[@]}"; do
             export PROFILE="gaming"
             break
             ;;
-        "${options[4]}") # Full
+        "${options[4]}") # Virtualization
+            export PROFILE="virtualization"
+            break
+            ;;
+        "${options[5]}") # Full
             export PROFILE="full"
             break
             ;;
-        "${options[5]}") # Solo Terminal
+        "${options[6]}") # Solo Terminal
             export PROFILE="terminal"
             break
             ;;
-        "${options[6]}") # Salir
+        "${options[7]}") # Salir
             echo "Saliendo. No se instaló nada."
             exit 0
             ;;
@@ -73,16 +112,11 @@ select choice in "${options[@]}"; do
     esac
 done
 
-# --- Exportar variables para que los sub-scripts puedan usarlas ---
-export DISTRO
-export PROFILE
-
-# --- Lógica Principal de Ejecución ---
+# --- 5. Lógica Principal de Ejecución ---
 echo "🚀 Iniciando la configuración de Linux con el perfil: $PROFILE en un sistema $DISTRO."
 echo "-------------------------------------------------------------------"
-sleep 2 # Pausa breve para leer el mensaje
+sleep 2 
 
-# Definir los módulos
 modules=(
     "01-system-setup.sh"
     "02-install-apps.sh"
@@ -92,11 +126,9 @@ modules=(
 
 # Ejecutar cada módulo
 for module in "${modules[@]}"; do
-    
-    # ==== CAMBIO ESTÉTICO 1: LIMPIAR PANTALLA ====
     clear
-    
     script_path="$WORKDIR/modules/$module"
+    
     if [ -f "$script_path" ]; then
         echo "▶️  Ejecutando módulo: $module (Perfil: $PROFILE)"
         chmod +x "$script_path"
@@ -117,16 +149,33 @@ for module in "${modules[@]}"; do
     fi
 done
 
-# ==== CAMBIO ESTÉTICO 2: LANZAR FASTFETCH ====
+# --- 6. Generación de Alias ---
+clear
+echo "▶️  Ejecutando generador de alias de Flatpak..."
+alias_script_path="$WORKDIR/modules/update-flatpak-aliases.sh"
+if [ -f "$alias_script_path" ]; then
+    chmod +x "$alias_script_path"
+    if ! "$alias_script_path"; then
+        echo "❌ Error en el script 'update-flatpak-aliases.sh'."
+        exit 1
+    fi
+    echo "✅ Generador de alias finalizado."
+    echo "-------------------------------------------------------------------"
+    echo "(Lanzamiento final en 2 segundos...)"
+    sleep 2
+else
+    echo "⚠️  Aviso: No se encontró 'update-flatpak-aliases.sh'. Saltando."
+fi
+
+# --- 7. Lanzamiento Final ---
 clear
 echo "🎉 ¡Todos los módulos se completaron con éxito!"
-echo "Se recomienda reiniciar el sistema para que todos los cambios surtan efecto."
+echo "A partir de ahora, el repositorio de este script vive en $DEST_DIR"
+echo "Puedes actualizarlo con 'git pull' y usar el alias 'update'."
 echo ""
+echo "Se recomienda reiniciar el sistema para que todos los cambios surtan efecto."
 echo "🚀 ¡Lanzando fastfetch en kitty para la gran final!"
 
-# 'nohup' evita que el proceso muera si la terminal se cierra
-# '&' lo ejecuta en segundo plano (desacopla el script)
-# '>/dev/null 2>&1' redirige toda la salida para no "ensuciar" la terminal actual
-nohup kitty kitten Catppuccin-Mocha fastfetch >/dev/null 2>&1 &
+nohup kitty fastfetch >/dev/null 2>&1 &
 
 exit 0
