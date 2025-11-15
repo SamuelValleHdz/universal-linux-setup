@@ -21,7 +21,12 @@ if [ "$DISTRO" == "arch" ]; then
     sudo pacman -Syu --noconfirm --needed "${pkgs_build_arch[@]}" "${pkgs_essentials_arch[@]}"
 elif [ "$DISTRO" == "debian" ]; then
     sudo apt-get update
-    sudo apt-get install -y "${pkgs_build_debian[@]}" "${pkgs_essentials_debian[@]}"
+    sudo apt-get install -y "${pkgs_build_debian[@]}" "${pkgs_essentials_debian[@]}"*
+
+    echo "⚙️  Añadiendo PPA de Fastfetch para Ubuntu/Debian..."
+    sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
+    # Necesitamos actualizar OTRA VEZ para que apt conozca los paquetes del PPA
+    sudo apt-get update
 fi
 
 echo "✅ Paquetes esenciales instalados."

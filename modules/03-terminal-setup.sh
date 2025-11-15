@@ -6,35 +6,31 @@ set -e
 echo "--- Módulo 3: Configuración de la Terminal ---"
 
 # --- Zsh y Oh My Zsh ---
-# Cambia el shell por defecto a Zsh si no lo es ya
+# (Toda la sección de Zsh y Oh My Zsh sigue igual...)
 if [ "$SHELL" != "/bin/zsh" ]; then
     echo "⚙️  Cambiando el shell por defecto a Zsh..."
-    # El comando chsh necesita la ruta completa a zsh
     ZSH_PATH=$(which zsh)
     if chsh -s "$ZSH_PATH"; then
-        echo "✅ Shell cambiado a Zsh. Por favor, cierra sesión y vuelve a entrar para que el cambio surta efecto."
+        echo "✅ Shell cambiado a Zsh. Por favor, cierra sesión y vuelve a entrar."
     else
-        echo "⚠️  No se pudo cambiar el shell. Hazlo manualmente con: chsh -s $(which zsh)"
+        echo "⚠️  No se pudo cambiar el shell."
     fi
 else
     echo "👌 El shell por defecto ya es Zsh."
 fi
 
-# Instala Oh My Zsh si no existe
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
     echo "⚙️  Instalando Oh My Zsh..."
-    # Usamos la opción --unattended para que no nos pida cambiar a zsh (ya lo hicimos) y no inicie un nuevo shell
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
     echo "✅ Oh My Zsh instalado."
 else
     echo "👌 Oh My Zsh ya está instalado."
 fi
 
-
 # --- Plugins para Oh My Zsh ---
+# (La sección de plugins sigue igual...)
 ZSH_CUSTOM=${ZSH_CUSTOM:-~/.oh-my-zsh/custom}
 
-# zsh-autosuggestions
 if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
     echo "⚙️  Instalando zsh-autosuggestions..."
     git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
@@ -42,7 +38,6 @@ else
     echo "👌 zsh-autosuggestions ya está instalado."
 fi
 
-# zsh-syntax-highlighting
 if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
     echo "⚙️  Instalando zsh-syntax-highlighting..."
     git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
@@ -50,15 +45,12 @@ else
     echo "👌 zsh-syntax-highlighting ya está instalado."
 fi
 
-# Activa los plugins en .zshrc
-echo "⚙️  Activando plugins en .zshrc..."
-# Usamos sed para encontrar la línea de plugins y añadir los nuestros.
-# Esto evita añadirlos múltiples veces si el script se ejecuta de nuevo.
 sed -i.bak 's/^plugins=(git)$/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' ~/.zshrc
+echo "✅ Plugins de Zsh activados en .zshrc"
 
 
 # --- Entorno para Neovim / LunarVim ---
-echo "⚙️  Instalando entorno de desarrollo para editores..."
+echo "⚙️  Instalando dependencias de LunarVim..."
 
 # Instalar Neovim, Node.js y npm de forma nativa
 if [ "$DISTRO" == "arch" ]; then
@@ -71,8 +63,47 @@ fi
 if ! command -v pyright &> /dev/null; then
     sudo npm install -g pyright
 fi
+echo "✅ Dependencias de LunarVim instaladas."
 
-# Puedes añadir aquí la instalación de LunarVim si quieres que sea parte del script automático
-# echo "Para instalar LunarVim, ejecuta: LV_BRANCH='release-1.3/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.3/neovim-0.9/utils/installer/install.sh)"
+
+# Instala LunarVim si no está ya instalado
+if ! command -v lvim &> /dev/null; then
+    echo "⚙️  Instalando LunarVim (lvim)..."
+    # Usamos la misma rama que tenías definida
+    # Añadimos '--yes' para hacerlo no-interactivo
+    LV_BRANCH='release-1.3/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.3/neovim-0.9/utils/installer/install.sh) --yes
+    echo "✅ LunarVim instalado."
+else
+    echo "👌 LunarVim (lvim) ya está instalado."
+fi
+
+
+# Añade las rutas de Flatpak y .local/bin al .zshrc
+echo "⚙️  Configurando $PATH para Flatpak y LunarVim en .zshrc..."
+
+cat << 'EOF' >> ~/.zshrc
+
+# --- Configuración de $PATH ---
+
+# Añade la carpeta local de binarios (para lvim y otros scripts)
+if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$PATH:$HOME/.local/bin"
+fi
+
+# Añade las carpetas de binarios de Flatpak (para 'firefox', 'vlc', etc.)
+# Para instalaciones de todo el sistema
+if [ -d "/var/lib/flatpak/exports/bin" ] && [[ ":$PATH:" != *":/var/lib/flatpak/exports/bin:"* ]]; then
+    export PATH="$PATH:/var/lib/flatpak/exports/bin"
+fi
+# Para instalaciones de usuario
+if [ -d "$HOME/.local/share/flatpak/exports/bin" ] && [[ ":$PATH:" != *":$HOME/.local/share/flatpak/exports/bin:"* ]]; then
+    export PATH="$PATH:$HOME/.local/share/flatpak/exports/bin"
+fi
+# --- Fin de la configuración de $PATH ---
+EOF
+
+echo "✅ $PATH de Flatpak y .local/bin configurado en .zshrc"
+# ==== FIN DE MODIFICACIÓN 2 ====
+
 
 echo "--- Módulo 3 Finalizado ---"

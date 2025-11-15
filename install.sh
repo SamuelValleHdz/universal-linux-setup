@@ -127,6 +127,6 @@ echo "🚀 ¡Lanzando fastfetch en kitty para la gran final!"
 # 'nohup' evita que el proceso muera si la terminal se cierra
 # '&' lo ejecuta en segundo plano (desacopla el script)
 # '>/dev/null 2>&1' redirige toda la salida para no "ensuciar" la terminal actual
-nohup kitty fastfetch >/dev/null 2>&1 &
+nohup kitty kitten Catppuccin-Mocha fastfetch >/dev/null 2>&1 &
 
 exit 0
