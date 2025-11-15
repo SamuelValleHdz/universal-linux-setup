@@ -1,13 +1,53 @@
-# ... (Al final de 04-tweaks-and-config.sh)
+#!/bin/bash
+# Activa el modo estricto
+set -e
+echo "--- Módulo 4: Ajustes y Configuraciones Personales ---"
+
+# --- Copia de Dotfiles ---
+# $WORKDIR es exportado por install.sh
+CONFIG_DIR="$WORKDIR/config"
+
+if [ -d "$CONFIG_DIR" ]; then
+    echo "⚙️  Copiando archivos de configuración (dotfiles)..."
+    if [ -d "$CONFIG_DIR/kitty" ]; then
+        # Asegura que el directorio de destino exista
+        mkdir -p "$HOME/.config/kitty"
+        # -rT copia el contenido de la carpeta
+        cp -rT "$CONFIG_DIR/kitty" "$HOME/.config/kitty"
+        echo "✅ Configuración de Kitty copiada."
+    fi
+    if [ -d "$CONFIG_DIR/fastfetch" ]; {
+        mkdir -p "$HOME/.config/fastfetch"
+        cp -rT "$CONFIG_DIR/fastfetch" "$HOME/.config/fastfetch"
+        echo "✅ Configuración de Fastfetch copiada."
+    } fi
+else
+    echo "⚠️  No se encontró la carpeta 'config'. Saltando copia de dotfiles."
+fi
+
+# --- Ajustes Específicos de Arch (Ejemplos) ---
+if [ "$DISTRO" == "arch" ]; then
+    echo "⚙️  Aplicando ajustes específicos para Arch..."
+    # Activa 'ILoveCandy' en pacman
+    if ! grep -q "ILoveCandy" /etc/pacman.conf; then
+        sudo sed -i '/#Color/a ILoveCandy' /etc/pacman.conf
+        echo "🍬 ¡ILoveCandy activado!"
+    fi
+    # Activa 'multilib'
+    if grep -q "#\[multilib\]" /etc/pacman.conf; then
+        echo "Habilitando repositorio Multilib..."
+        sudo sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
+        sudo pacman -Syy
+        echo "✅ Repositorio Multilib activado."
+    fi
+fi
 
 # --- Ajustes de VirtualBox ---
-# Revisa si VirtualBox está instalado antes de intentar configurarlo
+# Revisa si VirtualBox está instalado (por el Módulo 02)
 if command -v virtualbox &> /dev/null; then
     echo "⚙️  Configurando permisos para VirtualBox..."
     
     # Añade el usuario actual al grupo 'vboxusers'
-    # 'id -nG $USER' lista los grupos del usuario
-    # 'grep -q' comprueba si 'vboxusers' ya está en la lista
     if ! id -nG "$USER" | grep -q "vboxusers"; then
         sudo usermod -aG vboxusers "$USER"
         echo "✅ Usuario $USER añadido al grupo 'vboxusers'."
@@ -15,7 +55,7 @@ if command -v virtualbox &> /dev/null; then
     else
         echo "👌 El usuario $USER ya pertenece al grupo 'vboxusers'."
     fi
-
+    
     # Aviso sobre el Extension Pack en Debian/Ubuntu
     if [ "$DISTRO" == "debian" ]; then
         if ! dpkg -l | grep -q "virtualbox-ext-pack"; then
@@ -30,56 +70,47 @@ if command -v virtualbox &> /dev/null; then
         fi
     fi
 else
-    # Si virtualbox no está instalado, no hace nada
     echo "-> VirtualBox no está instalado, saltando ajustes."
 fi
-
-# ... (Todo tu script 04 anterior) ...
 
 # --- Configuración de Alias de Shell ---
 echo "⚙️  Configurando alias personalizados para Zsh..."
 
-# $WORKDIR es exportado por install.sh y ahora es una ruta absoluta
-# Esta variable se expandirá AHORA (en el script)
+# Obtiene la ruta al script de alias (definida en install.sh)
 ALIAS_SCRIPT_PATH="$WORKDIR/modules/update-flatpak-aliases.sh"
 
-# Usamos un marcador para evitar duplicados
+# Usa un marcador para ser idempotente
 if ! grep -q "# --- Fin de los alias personalizados ---" "$HOME/.zshrc"; then
     echo "-> Añadiendo bloque de alias personalizados a .zshrc..."
     
-    # Primero, añadimos los alias sin sudo (que son independientes de la distro)
-    # Usamos comillas en el EOF para que NADA se expanda
+    # \EOF evita que las variables (como $USER) se expandan
     cat << \EOF >> "$HOME/.zshrc"
 
 # --- Alias Personalizados (Añadidos por 04-tweaks-and-config.sh) ---
-
-# --- Alias de conveniencia (sin sudo) ---
+# Alias de conveniencia (sin sudo)
 alias apt='sudo apt'
 alias pacman='sudo pacman'
-# 'yay' no debe usarse con sudo, ya lo pide cuando lo necesita.
-alias yay='yay'
+alias yay='yay' # Yay nunca debe usarse con sudo
 EOF
     
     # --- Lógica de Alias de Actualización ---
-    # Esta lógica se ejecuta AHORA y añade el alias correcto
     
     if [ "$DISTRO" == "arch" ]; then
         echo "-> Añadiendo alias 'syu' y 'update' para Arch."
-        # Usamos "EOF" (sin comillas) para que $ALIAS_SCRIPT_PATH se expanda
+        # EOF (sin '\') permite que $ALIAS_SCRIPT_PATH se expanda
         cat << EOF >> "$HOME/.zshrc"
 
 # --- Alias de Actualización (Arch) ---
-alias syu="echo '🚀 Actualizando sistema (Yay) y Flatpaks...'; yay -Syu && \"$ALIAS_SCRIPT_PATH\""
+alias syu="echo '🚀 Actualizando sistema (Yay), Flatpaks y regenerando alias...'; yay -Syu && flatpak update -y && \"$ALIAS_SCRIPT_PATH\""
 alias update='syu'
 EOF
     
     elif [ "$DISTRO" == "debian" ]; then
         echo "-> Añadiendo alias 'update' y 'syu' para Debian."
-        # Usamos "EOF" (sin comillas) para que $ALIAS_SCRIPT_PATH se expanda
         cat << EOF >> "$HOME/.zshrc"
 
 # --- Alias de Actualización (Debian) ---
-alias update="echo '🚀 Actualizando sistema (Apt) y Flatpaks...'; sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y && \"$ALIAS_SCRIPT_PATH\""
+alias update="echo '🚀 Actualizando sistema (Apt), Flatpaks y regenerando alias...'; sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y && flatpak update -y && \"$ALIAS_SCRIPT_PATH\""
 alias syu='update'
 EOF
     fi

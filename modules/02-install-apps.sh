@@ -1,11 +1,10 @@
 #!/bin/bash
 # Activa el modo estricto
 set -e
-
 echo "--- Módulo 2: Instalación de Aplicaciones (Perfil: $PROFILE) ---"
 
 # --- 1. Definición de Listas de Aplicaciones ---
-# (Listas de Flatpak sin cambios)
+# (Listas de Flatpak)
 apps_flatpak_minimal=(
     org.mozilla.firefox
     org.videolan.vlc
@@ -25,40 +24,32 @@ apps_flatpak_gaming=(
     org.prismlauncher.PrismLauncher
 )
 
-# (VirtualBox ELIMINADO de aquí)
+# (Listas Nativas Mínimas)
 native_minimal_arch=(btop nsnake fastfetch)
 native_minimal_debian=(btop nsnake fastfetch)
 
-# (Extras sin cambios)
+# (Listas Nativas Opcionales)
 native_extras_arch=(hollywood asciiquarium)
 native_extras_debian=(hollywood)
-
-# --- NUEVA CATEGORÍA NATIVA ---
-# En Arch, podemos incluir el Extension Pack desde el AUR (yay)
 native_virtualization_arch=(virtualbox virtualbox-host-dkms virtualbox-ext-oracle)
-# En Debian, no podemos incluir 'virtualbox-ext-pack' porque
-# requiere aceptar una EULA interactiva que detendría el script.
-# Lo manejaremos en el Módulo 4.
 native_virtualization_debian=(virtualbox virtualbox-dkms)
-
 
 # --- 2. Funciones de Instalación ---
 
-# ==== FUNCIÓN MODIFICADA ====
-# Ya no acepta "minimal"/"full", sino una lista de paquetes
+# Instala paquetes nativos (apt/yay)
+# Acepta una lista de paquetes
 install_native_utils() {
     local apps_to_install=("$@")
-
     if [ ${#apps_to_install[@]} -eq 0 ]; then
         echo "-> No se seleccionaron aplicaciones nativas para este perfil."
         return
     fi
-    
     echo "⚙️  Instalando ${#apps_to_install[@]} aplicaciones nativas..."
     printf "  - %s\n" "${apps_to_install[@]}"
-
+    
     if [ "$DISTRO" == "arch" ]; then
         echo "-> Usando yay (Arch)..."
+        # --needed evita reinstalar lo que ya está
         yay -S --noconfirm --needed "${apps_to_install[@]}"
     elif [ "$DISTRO" == "debian" ]; then
         echo "-> Usando apt (Debian/Ubuntu)..."
@@ -69,102 +60,66 @@ install_native_utils() {
     echo "✅ Aplicaciones nativas instaladas."
 }
 
-# (Función install_flatpaks sin cambios)
+# Instala paquetes de Flatpak
+# Acepta una lista de paquetes
 install_flatpaks() {
     local apps_to_install=("$@")
-    # ... (código sin cambios) ...
+    if [ ${#apps_to_install[@]} -eq 0 ]; then
+        echo "-> No se seleccionaron aplicaciones Flatpak para este perfil."
+        return
+    fi
+    echo "⚙️  Instalando ${#apps_to_install[@]} aplicaciones de Flathub..."
+    printf "  - %s\n" "${apps_to_install[@]}"
+    
+    # Este comando es idempotente: instala lo que falta
+    # y se salta lo que ya está. No se necesita --reinstall.
+    flatpak install -y --noninteractive flathub "${apps_to_install[@]}"
+    echo "✅ Aplicaciones de Flathub instaladas."
 }
 
-
 # --- 3. Lógica de Perfil (No-interactiva) ---
-# ==== LÓGICA MODIFICADA ====
-# Ahora creamos DOS listas: una para flatpak, una para nativas
+# Construye las listas de instalación basadas en $PROFILE
 
 declare -a final_flatpak_list
 declare -a final_native_list
 
 echo "-> Procesando perfil '$PROFILE' para la selección de apps..."
-
 case "$PROFILE" in
     "minimal")
         final_flatpak_list=( "${apps_flatpak_minimal[@]}" )
-        final_native_list=( "${native_minimal_arch[@]}" )
+        if [ "$DISTRO" == "arch" ]; then final_native_list=( "${native_minimal_arch[@]}" ); else final_native_list=( "${native_minimal_debian[@]}" ); fi
         ;;
     "work")
-        final_flatpak_list=(
-            "${apps_flatpak_minimal[@]}"
-            "${apps_flatpak_work[@]}"
-        )
-        final_native_list=(
-            "${native_minimal_arch[@]}"
-            "${native_extras_arch[@]}"
-        )
+        final_flatpak_list=( "${apps_flatpak_minimal[@]}" "${apps_flatpak_work[@]}" )
+        if [ "$DISTRO" == "arch" ]; then final_native_list=( "${native_minimal_arch[@]}" "${native_extras_arch[@]}" ); else final_native_list=( "${native_minimal_debian[@]}" "${native_extras_debian[@]}" ); fi
         ;;
     "creative")
-        final_flatpak_list=(
-            "${apps_flatpak_minimal[@]}"
-            "${apps_flatpak_creative[@]}"
-        )
-        final_native_list=(
-            "${native_minimal_arch[@]}"
-            "${native_extras_arch[@]}"
-        )
+        final_flatpak_list=( "${apps_flatpak_minimal[@]}" "${apps_flatpak_creative[@]}" )
+        if [ "$DISTRO" == "arch" ]; then final_native_list=( "${native_minimal_arch[@]}" "${native_extras_arch[@]}" ); else final_native_list=( "${native_minimal_debian[@]}" "${native_extras_debian[@]}" ); fi
         ;;
     "gaming")
-        final_flatpak_list=(
-            "${apps_flatpak_minimal[@]}"
-            "${apps_flatpak_gaming[@]}"
-        )
-        final_native_list=(
-            "${native_minimal_arch[@]}"
-            "${native_extras_arch[@]}"
-        )
+        final_flatpak_list=( "${apps_flatpak_minimal[@]}" "${apps_flatpak_gaming[@]}" )
+        if [ "$DISTRO" == "arch" ]; then final_native_list=( "${native_minimal_arch[@]}" "${native_extras_arch[@]}" ); else final_native_list=( "${native_minimal_debian[@]}" "${native_extras_debian[@]}" ); fi
         ;;
-    
-    # --- NUEVO PERFIL ---
     "virtualization")
         final_flatpak_list=( "${apps_flatpak_minimal[@]}" )
-        # Distingue entre Arch y Debian para la lista nativa
         if [ "$DISTRO" == "arch" ]; then
-            final_native_list=(
-                "${native_minimal_arch[@]}"
-                "${native_virtualization_arch[@]}"
-            )
+            final_native_list=( "${native_minimal_arch[@]}" "${native_virtualization_arch[@]}" )
         else
-            final_native_list=(
-                "${native_minimal_debian[@]}"
-                "${native_virtualization_debian[@]}"
-            )
+            final_native_list=( "${native_minimal_debian[@]}" "${native_virtualization_debian[@]}" )
         fi
         ;;
-
     "full")
-        final_flatpak_list=(
-            "${apps_flatpak_minimal[@]}"
-            "${apps_flatpak_work[@]}"
-            "${apps_flatpak_creative[@]}"
-            "${apps_flatpak_gaming[@]}"
-        )
+        final_flatpak_list=( "${apps_flatpak_minimal[@]}" "${apps_flatpak_work[@]}" "${apps_flatpak_creative[@]}" "${apps_flatpak_gaming[@]}" )
         if [ "$DISTRO" == "arch" ]; then
-            final_native_list=(
-                "${native_minimal_arch[@]}"
-                "${native_extras_arch[@]}"
-                "${native_virtualization_arch[@]}"
-            )
+            final_native_list=( "${native_minimal_arch[@]}" "${native_extras_arch[@]}" "${native_virtualization_arch[@]}" )
         else
-            final_native_list=(
-                "${native_minimal_debian[@]}"
-                "${native_extras_debian[@]}"
-                "${native_virtualization_debian[@]}"
-            )
+            final_native_list=( "${native_minimal_debian[@]}" "${native_extras_debian[@]}" "${native_virtualization_debian[@]}" )
         fi
         ;;
     "terminal")
         # Lista de flatpak vacía
-        final_native_list=(
-            "${native_minimal_arch[@]}"
-            "${native_extras_arch[@]}"
-        )
+        if [ "$DISTRO" == "arch" ]; then final_native_list=( "${native_minimal_arch[@]}" "${native_extras_arch[@]}" ); else final_native_list=( "${native_minimal_debian[@]}" "${native_extras_debian[@]}" ); fi
         ;;
     *)
         echo "⚠️  Perfil '$PROFILE' desconocido."
@@ -172,15 +127,12 @@ case "$PROFILE" in
 esac
 
 # --- 4. Ejecución de Instalación ---
-# ==== LLAMADA MODIFICADA ====
 install_flatpaks "${final_flatpak_list[@]}"
-install_native_utils "${final_native_list[@]}" # Pasamos la lista
+install_native_utils "${final_native_list[@]}"
 
 # --- 5. Finalización de Flatpak ---
-# (Sin cambios)
-echo "⚙️  Actualizando la base de datos de Flatpak..."
+# Sigue siendo útil para actualizar los metadatos del sistema
+echo "⚙️  Actualizando la base de datos de AppStream de Flatpak..."
 flatpak update --appstream
-echo "✅ 'Alias' de Flatpak generados."
-
 
 echo "--- Módulo 2 Finalizado ---"
