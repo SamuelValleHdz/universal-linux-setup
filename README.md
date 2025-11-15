@@ -34,7 +34,7 @@ Before you run the script, you'll need:
     
     ```
     git clone https://github.com/SamuelValleHdz/universal-linux-setup.git
-    cd universal-linux-setup.git
+    cd universal-linux-setup
     ```
     
 2. Make the main script executable:
