@@ -7,7 +7,7 @@ echo "--- Módulo 2: Instalación de Aplicaciones (Perfil: $PROFILE) ---"
 # (Listas de Flatpak)
 apps_flatpak_minimal=(
     org.mozilla.firefox
-    org.videolan.vlc
+    org.videolan.VLC
     com.visualstudio.code
 )
 apps_flatpak_work=(

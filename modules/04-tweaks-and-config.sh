@@ -9,6 +9,8 @@ CONFIG_DIR="$WORKDIR/config"
 
 if [ -d "$CONFIG_DIR" ]; then
     echo "⚙️  Copiando archivos de configuración (dotfiles)..."
+    
+    # Bloque de Kitty
     if [ -d "$CONFIG_DIR/kitty" ]; then
         # Asegura que el directorio de destino exista
         mkdir -p "$HOME/.config/kitty"
@@ -16,11 +18,14 @@ if [ -d "$CONFIG_DIR" ]; then
         cp -rT "$CONFIG_DIR/kitty" "$HOME/.config/kitty"
         echo "✅ Configuración de Kitty copiada."
     fi
-    if [ -d "$CONFIG_DIR/fastfetch" ]; {
+    
+    # Bloque de Fastfetch (Corregido, sin brackets)
+    if [ -d "$CONFIG_DIR/fastfetch" ]; then
         mkdir -p "$HOME/.config/fastfetch"
         cp -rT "$CONFIG_DIR/fastfetch" "$HOME/.config/fastfetch"
         echo "✅ Configuración de Fastfetch copiada."
-    } fi
+    fi
+    
 else
     echo "⚠️  No se encontró la carpeta 'config'. Saltando copia de dotfiles."
 fi

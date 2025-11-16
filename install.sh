@@ -162,6 +162,6 @@ echo "🚀 ¡Lanzando fastfetch en kitty para la gran final!"
 
 # 'nohup' y '&' lo ejecutan en segundo plano,
 # independientemente de esta terminal
-nohup kitty fastfetch >/dev/null 2>&1 &
+nohup kitty zsh -c "fastfetch; zsh" >/dev/null 2>&1 &
 
 exit 0

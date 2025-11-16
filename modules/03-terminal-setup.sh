@@ -62,7 +62,7 @@ fi
 # Instala LunarVim (es idempotente, no se reinstala)
 if ! command -v lvim &> /dev/null; then
     echo "⚙️  Instalando LunarVim (lvim)..."
-    LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh) --yes
+    LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh) --no 
     echo "✅ LunarVim instalado."
 else
     echo "👌 LunarVim (lvim) ya está instalado."
@@ -74,10 +74,10 @@ echo "⚙️  Configurando $PATH para pipx, lvim y alias en .zshrc..."
 # --- pipx ---
 # Arregla el error 'eval: command not found: Otherwise'
 # Redirige stderr (2) a /dev/null para silenciar la advertencia
-if ! grep -q 'eval "$(pipx ensurepath 2>/dev/null)"' "$HOME/.zshrc"; then
-    # Borra líneas viejas si existen, para evitar duplicados de versiones antiguas
+if ! grep -q 'eval "$(pipx ensurepath &>/dev/null)"' "$HOME/.zshrc"; then
+    # Borra líneas viejas si existen
     sed -i '/pipx ensurepath/d' "$HOME/.zshrc"
-    echo 'eval "$(pipx ensurepath 2>/dev/null)"' >> "$HOME/.zshrc"
+    echo 'eval "$(pipx ensurepath &>/dev/null)"' >> "$HOME/.zshrc"
     echo "✅ Añadido pipx ensurepath a .zshrc"
 else
     echo "👌 pipx ensurepath ya está en .zshrc."
