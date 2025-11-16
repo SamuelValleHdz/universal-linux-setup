@@ -2,52 +2,8 @@
 # Activa el modo estricto: si un comando falla, el script se detiene.
 set -e
 
-# --- 1. Lógica de Auto-Reubicación ---
-# Define la "casa" permanente para este repositorio
-DEST_BASE="$HOME/.dotfiles"
-
-# Obtiene el directorio actual (absoluto) del script
-CURRENT_DIR=$(cd "$(dirname "$0")" && pwd)
-
-# Obtiene el nombre de la carpeta del proyecto (ej: "global-linux-desktop")
-PROJECT_NAME=$(basename "$CURRENT_DIR")
-
-# Define la ruta de destino final
-DEST_PATH="$DEST_BASE/$PROJECT_NAME"
-
-# Comprueba si el script YA está en su casa permanente
-if [ "$CURRENT_DIR" != "$DEST_PATH" ]; then
-    echo "--- Reubicando el Repositorio de Instalación ---"
-    echo "Moviendo el script a su ubicación permanente: $DEST_PATH"
-    
-    # Asegura que el directorio PADRE exista (ej: ~/.dotfiles)
-    mkdir -p "$DEST_BASE"
-    
-    # Usa rsync para copiar/sincronizar el repo completo
-    # -a (archive) preserva permisos
-    # --delete asegura que el destino sea una copia exacta
-    # El "/" al final de CURRENT_DIR copia el *contenido* de la carpeta
-    rsync -a --delete "$CURRENT_DIR/" "$DEST_PATH/"
-    
-    echo "✅ Reubicación completa. Reiniciando el script desde la nueva ubicación..."
-    echo "-------------------------------------------------------------------"
-    sleep 2
-    
-    # 'exec' reemplaza el proceso actual con el nuevo
-    # Pasa todos los argumentos originales (si los hubiera)
-    exec "$DEST_PATH/install.sh" "$@"
-fi
-
-# --- 2. Configuración Principal ---
-# Si el script llega aquí, significa que ya está en $DEST_PATH
-echo "--- Script ejecutándose desde la ubicación permanente ($DEST_PATH) ---"
-
-# Exporta el WORKDIR absoluto para que los módulos (como 04)
-# puedan usarlo para crear alias (como 'update')
-export WORKDIR="$CURRENT_DIR" # $CURRENT_DIR ahora es $DEST_PATH
-
-# --- 3. Detección del Sistema Operativo ---
-# Exporta DISTRO para que todos los submódulos la puedan usar
+# --- 1. Detección de Distro (Movido al inicio) ---
+# Necesitamos saber la distro AHORA para instalar prerrequisitos.
 export DISTRO=""
 if command -v pacman &> /dev/null; then
     echo "✅ Sistema basado en Arch detectado."
@@ -60,12 +16,58 @@ else
     exit 1
 fi
 
-# --- 4. Interfaz de Usuario (TUI) para seleccionar el Perfil ---
+# --- 2. Comprobación de Prerrequisitos ---
+# El script necesita 'git' (para futuros 'pull') y 'rsync' (para reubicarse).
+echo "⚙️  Comprobando prerrequisitos (git, rsync)..."
+
+if ! command -v rsync &> /dev/null; then
+    echo "-> 'rsync' no está instalado. Instalando..."
+    if [ "$DISTRO" == "arch" ]; then
+        sudo pacman -S --noconfirm --needed rsync
+    elif [ "$DISTRO" == "debian" ]; then
+        sudo apt-get update
+        sudo apt-get install -y rsync
+    fi
+    echo "✅ 'rsync' instalado."
+else
+    echo "👌 'rsync' ya está instalado."
+fi
+# (Asumimos que 'git' existe, ya que el usuario usó 'git clone')
+
+# --- 3. Lógica de Auto-Reubicación ---
+# Define la "casa" permanente para este repositorio
+DEST_BASE="$HOME/.dotfiles"
+CURRENT_DIR=$(cd "$(dirname "$0")" && pwd)
+PROJECT_NAME=$(basename "$CURRENT_DIR")
+DEST_PATH="$DEST_BASE/$PROJECT_NAME"
+
+# Comprueba si el script YA está en su casa permanente
+if [ "$CURRENT_DIR" != "$DEST_PATH" ]; then
+    echo "--- Reubicando el Repositorio de Instalación ---"
+    echo "Moviendo el script a su ubicación permanente: $DEST_PATH"
+    
+    mkdir -p "$DEST_BASE"
+    
+    # Este comando ahora funcionará en Arch porque
+    # acabamos de instalar 'rsync'
+    rsync -a --delete "$CURRENT_DIR/" "$DEST_PATH/"
+    
+    echo "✅ Reubicación completa. Reiniciando el script desde la nueva ubicación..."
+    echo "-------------------------------------------------------------------"
+    sleep 2
+    
+    exec "$DEST_PATH/install.sh" "$@"
+fi
+
+# --- 4. Configuración Principal ---
+echo "--- Script ejecutándose desde la ubicación permanente ($DEST_PATH) ---"
+export WORKDIR="$CURRENT_DIR" # $CURRENT_DIR ahora es $DEST_PATH
+
+# --- 5. Interfaz de Usuario (TUI) para seleccionar el Perfil ---
 clear 
 echo "Bienvenido al Script de Instalación."
 echo "Selecciona el perfil de instalación deseado:"
 echo ""
-
 options=(
     "Minimal (Firefox, VLC, VSCode)"
     "Work (Minimal + Obsidian, OnlyOffice)"
@@ -76,7 +78,6 @@ options=(
     "Solo Terminal (Utilidades nativas)"
     "Salir"
 )
-
 PS3="Elige una opción (1-8): "
 select choice in "${options[@]}"; do
     case $choice in
@@ -92,34 +93,27 @@ select choice in "${options[@]}"; do
     esac
 done
 
-# --- 5. Lógica Principal de Ejecución ---
+# --- 6. Lógica Principal de Ejecución ---
 echo "🚀 Iniciando la configuración de Linux con el perfil: $PROFILE en un sistema $DISTRO."
 echo "-------------------------------------------------------------------"
 sleep 2 
 
-# Lista ordenada de módulos a ejecutar
 modules=(
     "01-system-setup.sh"
     "02-install-apps.sh"
     "03-terminal-setup.sh"
     "04-tweaks-and-config.sh"
 )
-
-# Ejecutar cada módulo
 for module in "${modules[@]}"; do
     clear
     script_path="$WORKDIR/modules/$module"
-    
     if [ -f "$script_path" ]; then
         echo "▶️  Ejecutando módulo: $module (Perfil: $PROFILE)"
         chmod +x "$script_path"
-        
-        # Ejecuta el módulo y detiene todo si falla
         if ! "$script_path"; then
             echo "❌ Error en el módulo '$module'. La instalación se ha detenido."
             exit 1
         fi
-
         echo "✅ Módulo finalizado: $module"
         echo "-------------------------------------------------------------------"
         echo "(Siguiente módulo en 2 segundos...)"
@@ -131,9 +125,7 @@ for module in "${modules[@]}"; do
     fi
 done
 
-# --- 6. Generación de Alias ---
-# Se ejecuta al final para asegurar que todas las apps (de 02)
-# y el archivo .zshrc (de 03) existan.
+# --- 7. Generación de Alias ---
 clear
 echo "▶️  Ejecutando generador de alias de Flatpak..."
 alias_script_path="$WORKDIR/modules/update-flatpak-aliases.sh"
@@ -151,7 +143,7 @@ else
     echo "⚠️  Aviso: No se encontró 'update-flatpak-aliases.sh'. Saltando."
 fi
 
-# --- 7. Lanzamiento Final ---
+# --- 8. Lanzamiento Final ---
 clear
 echo "🎉 ¡Todos los módulos se completaron con éxito!"
 echo "A partir de ahora, el repositorio de este script vive en $DEST_PATH"
@@ -159,9 +151,5 @@ echo "Puedes actualizarlo con 'git pull' y usar el alias 'update'."
 echo ""
 echo "Se recomienda reiniciar el sistema para que todos los cambios surtan efecto."
 echo "🚀 ¡Lanzando fastfetch en kitty para la gran final!"
-
-# 'nohup' y '&' lo ejecutan en segundo plano,
-# independientemente de esta terminal
-nohup kitty zsh -c "fastfetch; zsh" >/dev/null 2>&1 &
-
+nohup kitty zsh -c "fastfetch; zsh" >/dev/null 2...
 exit 0
