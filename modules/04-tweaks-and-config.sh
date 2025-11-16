@@ -1,73 +1,73 @@
 #!/bin/bash
-# Activa el modo estricto
+# Enable strict mode
 set -e
-echo "--- Módulo 4: Ajustes y Configuraciones Personales ---"
+echo "--- Module 4: Tweaks and Personal Config ---"
 
-# --- Copia de Dotfiles ---
-# $WORKDIR es exportado por install.sh
+# --- Dotfile Copying ---
+# $WORKDIR is exported by install.sh
 CONFIG_DIR="$WORKDIR/config"
 
 if [ -d "$CONFIG_DIR" ]; then
-    echo "⚙️  Copiando archivos de configuración (dotfiles)..."
+    echo "[*] Copying configuration files (dotfiles)..."
     
-    # Bloque de Kitty
+    # Kitty block
     if [ -d "$CONFIG_DIR/kitty" ]; then
-        # Asegura que el directorio de destino exista
+        # Ensure the target directory exists
         mkdir -p "$HOME/.config/kitty"
-        # -rT copia el contenido de la carpeta
+        # -rT copies the *contents* of the folder
         cp -rT "$CONFIG_DIR/kitty" "$HOME/.config/kitty"
-        echo "✅ Configuración de Kitty copiada."
+        echo "[+] Kitty config copied."
     fi
     
-    # Bloque de Fastfetch (Corregido, sin brackets)
+    # Fastfetch block (syntax corrected)
     if [ -d "$CONFIG_DIR/fastfetch" ]; then
         mkdir -p "$HOME/.config/fastfetch"
         cp -rT "$CONFIG_DIR/fastfetch" "$HOME/.config/fastfetch"
-        echo "✅ Configuración de Fastfetch copiada."
+        echo "[+] Fastfetch config copied."
     fi
     
 else
-    echo "⚠️  No se encontró la carpeta 'config'. Saltando copia de dotfiles."
+    echo "[!] Warning: 'config' folder not found. Skipping dotfile copy."
 fi
 
-# --- Ajustes Específicos de Arch (Ejemplos) ---
+# --- Arch-Specific Tweaks (Examples) ---
 if [ "$DISTRO" == "arch" ]; then
-    echo "⚙️  Aplicando ajustes específicos para Arch..."
-    # Activa 'ILoveCandy' en pacman
+    echo "[*] Applying Arch-specific tweaks..."
+    # Enable 'ILoveCandy' in pacman
     if ! grep -q "ILoveCandy" /etc/pacman.conf; then
         sudo sed -i '/#Color/a ILoveCandy' /etc/pacman.conf
-        echo "🍬 ¡ILoveCandy activado!"
+        echo "[+] ILoveCandy enabled!"
     fi
-    # Activa 'multilib'
+    # Enable 'multilib'
     if grep -q "#\[multilib\]" /etc/pacman.conf; then
-        echo "Habilitando repositorio Multilib..."
+        echo "Enabling Multilib repository..."
         sudo sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
         sudo pacman -Syy
-        echo "✅ Repositorio Multilib activado."
+        echo "[+] Multilib repository enabled."
     fi
 fi
 
-# --- Ajustes de VirtualBox ---
-# Revisa si VirtualBox está instalado (por el Módulo 02)
+# --- VirtualBox Tweaks ---
+# Check if VirtualBox was installed (by Module 02)
 if command -v virtualbox &> /dev/null; then
-    echo "⚙️  Configurando permisos para VirtualBox..."
+    echo "[*] Configuring permissions for VirtualBox..."
     
-    # Añade el usuario actual al grupo 'vboxusers'
+    # Add the current user to the 'vboxusers' group
     if ! id -nG "$USER" | grep -q "vboxusers"; then
         sudo usermod -aG vboxusers "$USER"
-        echo "✅ Usuario $USER añadido al grupo 'vboxusers'."
-        echo "   (Se requiere CERRAR SESIÓN y volver a entrar para que surta efecto)"
+        echo "[+] User $USER added to 'vboxusers' group."
+        echo "   (A full LOGOUT is required for this to take effect)"
     else
-        echo "👌 El usuario $USER ya pertenece al grupo 'vboxusers'."
+        echo "[+] User $USER is already in 'vboxusers' group."
     fi
     
-    # Aviso sobre el Extension Pack en Debian/Ubuntu
+    # Warning about Extension Pack on Debian/Ubuntu
     if [ "$DISTRO" == "debian" ]; then
         if ! dpkg -l | grep -q "virtualbox-ext-pack"; then
             echo "-------------------------------------------------------------------"
-            echo "⚠️  ACCIÓN MANUAL REQUERIDA (VirtualBox)"
-            echo "El 'Extension Pack' (para USB) no se pudo instalar automáticamente."
-            echo "Por favor, ejecútalo manualmente y acepta la licencia:"
+            echo "[!] MANUAL ACTION REQUIRED (VirtualBox)"
+            echo "The 'Extension Pack' (for USB) could not be installed automatically."
+            echo "Please run the following manually and accept the license:"
             echo ""
             echo "   sudo apt install virtualbox-ext-pack"
             echo ""
@@ -75,59 +75,59 @@ if command -v virtualbox &> /dev/null; then
         fi
     fi
 else
-    echo "-> VirtualBox no está instalado, saltando ajustes."
+    echo "-> VirtualBox is not installed, skipping tweaks."
 fi
 
-# --- Configuración de Alias de Shell ---
-echo "⚙️  Configurando alias personalizados para Zsh..."
+# --- Custom Shell Alias Setup ---
+echo "[*] Configuring custom shell aliases..."
 
-# Obtiene la ruta al script de alias (definida en install.sh)
+# Get the path to the alias script (defined in install.sh)
 ALIAS_SCRIPT_PATH="$WORKDIR/modules/update-flatpak-aliases.sh"
 
-# Usa un marcador para ser idempotente
-if ! grep -q "# --- Fin de los alias personalizados ---" "$HOME/.zshrc"; then
-    echo "-> Añadiendo bloque de alias personalizados a .zshrc..."
+# Use a marker to be idempotent
+if ! grep -q "# --- End of custom aliases ---" "$HOME/.zshrc"; then
+    echo "-> Adding custom alias block to .zshrc..."
     
-    # \EOF evita que las variables (como $USER) se expandan
+    # \EOF prevents variables (like $USER) from expanding
     cat << \EOF >> "$HOME/.zshrc"
 
-# --- Alias Personalizados (Añadidos por 04-tweaks-and-config.sh) ---
-# Alias de conveniencia (sin sudo)
+# --- Custom Aliases (Added by 04-tweaks-and-config.sh) ---
+# Convenience aliases (sudo-less)
 alias apt='sudo apt'
 alias pacman='sudo pacman'
-alias yay='yay' # Yay nunca debe usarse con sudo
+alias yay='yay' # Yay should never be run with sudo
 EOF
     
-    # --- Lógica de Alias de Actualización ---
+    # --- Update Alias Logic ---
     
     if [ "$DISTRO" == "arch" ]; then
-        echo "-> Añadiendo alias 'syu' y 'update' para Arch."
-        # EOF (sin '\') permite que $ALIAS_SCRIPT_PATH se expanda
+        echo "-> Adding 'syu' and 'update' aliases for Arch."
+        # EOF (no '\') allows $ALIAS_SCRIPT_PATH to expand
         cat << EOF >> "$HOME/.zshrc"
 
-# --- Alias de Actualización (Arch) ---
-alias syu="echo '🚀 Actualizando sistema (Yay), Flatpaks y regenerando alias...'; yay -Syu && flatpak update -y && \"$ALIAS_SCRIPT_PATH\""
+# --- Update Aliases (Arch) ---
+alias syu="echo '[>] Updating system (Yay), Flatpaks, and regenerating aliases...'; yay -Syu && flatpak update -y && \"$ALIAS_SCRIPT_PATH\""
 alias update='syu'
 EOF
     
     elif [ "$DISTRO" == "debian" ]; then
-        echo "-> Añadiendo alias 'update' y 'syu' para Debian."
+        echo "-> Adding 'update' and 'syu' aliases for Debian."
         cat << EOF >> "$HOME/.zshrc"
 
-# --- Alias de Actualización (Debian) ---
-alias update="echo '🚀 Actualizando sistema (Apt), Flatpaks y regenerando alias...'; sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y && flatpak update -y && \"$ALIAS_SCRIPT_PATH\""
+# --- Update Aliases (Debian) ---
+alias update="echo '[>] Updating system (Apt), Flatpaks, and regenerating aliases...'; sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y && flatpak update -y && \"$ALIAS_SCRIPT_PATH\""
 alias syu='update'
 EOF
     fi
     
-    # Escribir el marcador final
+    # Write the final marker
     echo "" >> "$HOME/.zshrc"
-    echo "# --- Fin de los alias personalizados ---" >> "$HOME/.zshrc"
+    echo "# --- End of custom aliases ---" >> "$HOME/.zshrc"
 
-    echo "✅ Alias personalizados añadidos a .zshrc"
+    echo "[+] Custom aliases added to .zshrc"
 else
-    echo "👌 El bloque de alias personalizados ya existe en .zshrc. Saltando."
+    echo "[+] Custom alias block already exists in .zshrc. Skipping."
 fi
 
 
-echo "--- Módulo 4 Finalizado ---"
+echo "--- Module 4 Finished ---"

@@ -1,103 +1,104 @@
 #!/bin/bash
-# Activa el modo estricto
+# Enable strict mode
 set -e
 
-echo "--- Módulo 3: Configuración de la Terminal ---"
+echo "--- Module 3: Terminal Setup ---"
 
-# --- Arreglo de Permisos ---
-# Arregla el error 'permission denied: /home/sam/.local/bin'
-echo "⚙️  Verificando permisos de /home/$USER/.local/bin..."
+# --- Permission Fix ---
+# Fixes 'permission denied: /home/sam/.local/bin'
+echo "[*] Verifying permissions for /home/$USER/.local/bin..."
 mkdir -p "$HOME/.local/bin"
 sudo chown -R $USER:$USER "$HOME/.local/bin"
-echo "✅ Permisos de .local/bin corregidos."
+echo "[+] .local/bin permissions corrected."
 
-# --- Zsh y Oh My Zsh ---
+# --- Zsh and Oh My Zsh ---
 if [ "$SHELL" != "/bin/zsh" ]; then
-    echo "⚙️  Cambiando el shell por defecto a Zsh..."
+    echo "[*] Changing default shell to Zsh..."
     ZSH_PATH=$(which zsh)
     if chsh -s "$ZSH_PATH"; then
-        echo "✅ Shell cambiado a Zsh. Por favor, cierra sesión y vuelve a entrar."
+        echo "[+] Shell changed to Zsh. Please log out and back in."
     else
-        echo "⚠️  No se pudo cambiar el shell."
+        echo "[!] Could not change shell."
     fi
 else
-    echo "👌 El shell por defecto ya es Zsh."
+    echo "[+] Default shell is already Zsh."
 fi
 
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
-    echo "⚙️  Instalando Oh My Zsh..."
-    # --unattended lo hace no-interactivo
+    echo "[*] Installing Oh My Zsh..."
+    # --unattended makes it non-interactive
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-    echo "✅ Oh My Zsh instalado."
+    echo "[+] Oh My Zsh installed."
 else
-    echo "👌 Oh My Zsh ya está instalado."
+    echo "[+] Oh My Zsh is already installed."
 fi
 
-# --- Plugins para Oh My Zsh ---
+# --- Zsh Plugins ---
 ZSH_CUSTOM=${ZSH_CUSTOM:-~/.oh-my-zsh/custom}
 if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
-    echo "⚙️  Instalando zsh-autosuggestions..."
+    echo "[*] Installing zsh-autosuggestions..."
     git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 else
-    echo "👌 zsh-autosuggestions ya está instalado."
+    echo "[+] zsh-autosuggestions is already installed."
 fi
 if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
-    echo "⚙️  Instalando zsh-syntax-highlighting..."
+    echo "[*] Installing zsh-syntax-highlighting..."
     git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 else
-    echo "👌 zsh-syntax-highlighting ya está instalado."
+    echo "[+] zsh-syntax-highlighting is already installed."
 fi
-# Reemplaza la línea 'plugins=(git)' por la lista completa
+# Replace the 'plugins=(git)' line with the full list
 sed -i.bak 's/^plugins=(git)$/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' ~/.zshrc
-echo "✅ Plugins de Zsh activados en .zshrc"
+echo "[+] Zsh plugins activated in .zshrc"
 
-# --- Entorno para Neovim / LunarVim ---
-echo "⚙️  Instalando dependencias de LunarVim..."
+# --- Neovim / LunarVim Environment ---
+echo "[*] Installing LunarVim dependencies..."
 if [ "$DISTRO" == "arch" ]; then
     sudo pacman -S --noconfirm --needed neovim nodejs npm
 elif [ "$DISTRO" == "debian" ]; then
     sudo apt-get install -y neovim nodejs npm
 fi
 
-# Instala LunarVim (es idempotente, no se reinstala)
+# Install LunarVim (this is idempotent)
 if ! command -v lvim &> /dev/null; then
-    echo "⚙️  Instalando LunarVim (lvim)..."
-    LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh) --no 
-    echo "✅ LunarVim instalado."
+    echo "[*] Installing LunarVim (lvim)..."
+    LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh)
+    echo "[+] LunarVim installed."
 else
-    echo "👌 LunarVim (lvim) ya está instalado."
+    echo "[+] LunarVim (lvim) is already installed."
 fi
 
-# --- Configuración de $PATH y Alias ---
-echo "⚙️  Configurando $PATH para pipx, lvim y alias en .zshrc..."
+# --- $PATH and Alias Configuration ---
+echo "[*] Configuring $PATH and aliases in .zshrc..."
 
 # --- pipx ---
-# Arregla el error 'eval: command not found: Otherwise'
-# Redirige stderr (2) a /dev/null para silenciar la advertencia
+# This section is now only relevant for Debian/Ubuntu, but
+# the 'if ! grep' check makes it safe for Arch (it will just be skipped).
+# The redirect '&>/dev/null' silences all output to fix eval errors.
 if ! grep -q 'eval "$(pipx ensurepath &>/dev/null)"' "$HOME/.zshrc"; then
-    # Borra líneas viejas si existen
+    # Remove old, broken lines if they exist
     sed -i '/pipx ensurepath/d' "$HOME/.zshrc"
     echo 'eval "$(pipx ensurepath &>/dev/null)"' >> "$HOME/.zshrc"
-    echo "✅ Añadido pipx ensurepath a .zshrc"
+    echo "[+] Added pipx ensurepath to .zshrc"
 else
-    echo "👌 pipx ensurepath ya está en .zshrc."
+    echo "[+] pipx ensurepath is already in .zshrc."
 fi
 
-# --- .local/bin (lvim), Flatpak (auto) y Alias (estáticos) ---
-# Usa un marcador para ser idempotente
-if ! grep -q "# --- Fin de la configuración de \$PATH y Alias ---" "$HOME/.zshrc"; then
-    echo "-> Añadiendo bloque de \$PATH y carga de alias..."
+# --- .local/bin (lvim), Flatpak (auto), and Aliases (static) ---
+# Use a marker to be idempotent
+if ! grep -q "# --- End of $PATH and Alias config ---" "$HOME/.zshrc"; then
+    echo "-> Adding $PATH and alias-loading block..."
     cat << 'EOF' >> ~/.zshrc
 
-# --- Configuración de $PATH ---
-# (Bloque añadido por el script global-linux-desktop)
+# --- $PATH Configuration ---
+# (Block added by the global-linux-desktop script)
 
-# Añade la carpeta local de binarios (para lvim)
+# Add local bin folder (for lvim)
 if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     export PATH="$PATH:$HOME/.local/bin"
 fi
 
-# Añade las carpetas de binarios de Flatpak (Intento automático del sistema)
+# Add Flatpak bin folders (System's automatic attempt)
 if [ -d "/var/lib/flatpak/exports/bin" ] && [[ ":$PATH:" != *":/var/lib/flatpak/exports/bin:"* ]]; then
     export PATH="$PATH:/var/lib/flatpak/exports/bin"
 fi
@@ -105,16 +106,16 @@ if [ -d "$HOME/.local/share/flatpak/exports/bin" ] && [[ ":$PATH:" != *":$HOME/.
     export PATH="$PATH:$HOME/.local/share/flatpak/exports/bin"
 fi
 
-# --- Cargar alias de Flatpak (GENERADOS) ---
-# Carga el archivo de alias generado por 'update-flatpak-aliases.sh'
+# --- Load Generated Flatpak Aliases ---
+# Loads the alias file generated by 'update-flatpak-aliases.sh'
 ALIAS_FILE_PATH="$HOME/.zshrc-flatpak-aliases"
 if [ -f "$ALIAS_FILE_PATH" ]; then
     source "$ALIAS_FILE_PATH"
 fi
-# --- Fin de la configuración de $PATH y Alias ---
+# --- End of $PATH and Alias config ---
 EOF
-    echo "✅ $PATH y alias de Flatpak configurados en .zshrc"
+    echo "[+] $PATH and Flatpak aliases configured in .zshrc"
 else
-    echo "👌 El bloque de \$PATH y Alias ya existe en .zshrc. Saltando."
+    echo "[+] $PATH and Alias block already exists in .zshrc. Skipping."
 fi
-echo "--- Módulo 3 Finalizado ---"
+echo "--- Module 3 Finished ---"

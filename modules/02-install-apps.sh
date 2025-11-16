@@ -1,10 +1,10 @@
 #!/bin/bash
-# Activa el modo estricto
+# Enable strict mode
 set -e
-echo "--- Módulo 2: Instalación de Aplicaciones (Perfil: $PROFILE) ---"
+echo "--- Module 2: Application Installation (Profile: $PROFILE) ---"
 
-# --- 1. Definición de Listas de Aplicaciones ---
-# (Listas de Flatpak)
+# --- 1. Application Lists ---
+# (Flatpak Lists)
 apps_flatpak_minimal=(
     org.mozilla.firefox
     org.videolan.VLC
@@ -24,66 +24,66 @@ apps_flatpak_gaming=(
     org.prismlauncher.PrismLauncher
 )
 
-# (Listas Nativas Mínimas)
+# (Native Minimal Lists)
 native_minimal_arch=(btop nsnake fastfetch)
 native_minimal_debian=(btop nsnake fastfetch)
 
-# (Listas Nativas Opcionales)
+# (Native Optional Lists)
 native_extras_arch=(hollywood asciiquarium)
 native_extras_debian=(hollywood)
 native_virtualization_arch=(virtualbox virtualbox-host-dkms virtualbox-ext-oracle)
 native_virtualization_debian=(virtualbox virtualbox-dkms)
 
-# --- 2. Funciones de Instalación ---
+# --- 2. Installation Functions ---
 
-# Instala paquetes nativos (apt/yay)
-# Acepta una lista de paquetes
+# Installs native packages (apt/yay)
+# Accepts a package list
 install_native_utils() {
     local apps_to_install=("$@")
     if [ ${#apps_to_install[@]} -eq 0 ]; then
-        echo "-> No se seleccionaron aplicaciones nativas para este perfil."
+        echo "-> No native applications selected for this profile."
         return
     fi
-    echo "⚙️  Instalando ${#apps_to_install[@]} aplicaciones nativas..."
+    echo "[*] Installing ${#apps_to_install[@]} native applications..."
     printf "  - %s\n" "${apps_to_install[@]}"
     
     if [ "$DISTRO" == "arch" ]; then
-        echo "-> Usando yay (Arch)..."
-        # --needed evita reinstalar lo que ya está
+        echo "-> Using yay (Arch)..."
+        # --needed skips reinstalling what's already present
         yay -S --noconfirm --needed "${apps_to_install[@]}"
     elif [ "$DISTRO" == "debian" ]; then
-        echo "-> Usando apt (Debian/Ubuntu)..."
+        echo "-> Using apt (Debian/Ubuntu)..."
         sudo apt-get install -y "${apps_to_install[@]}"
     else
-        echo "⚠️  Distro no compatible '$DISTRO' en Módulo 2."
+        echo "[!] Unsupported distro '$DISTRO' in Module 2."
     fi
-    echo "✅ Aplicaciones nativas instaladas."
+    echo "[+] Native applications installed."
 }
 
-# Instala paquetes de Flatpak
-# Acepta una lista de paquetes
+# Installs Flatpak packages
+# Accepts a package list
 install_flatpaks() {
     local apps_to_install=("$@")
     if [ ${#apps_to_install[@]} -eq 0 ]; then
-        echo "-> No se seleccionaron aplicaciones Flatpak para este perfil."
+        echo "-> No Flatpak applications selected for this profile."
         return
     fi
-    echo "⚙️  Instalando ${#apps_to_install[@]} aplicaciones de Flathub..."
+    echo "[*] Installing ${#apps_to_install[@]} applications from Flathub..."
     printf "  - %s\n" "${apps_to_install[@]}"
     
-    # Este comando es idempotente: instala lo que falta
-    # y se salta lo que ya está. No se necesita --reinstall.
+    # This command is idempotent: it installs what's missing
+    # and skips what's already installed.
     flatpak install -y --noninteractive flathub "${apps_to_install[@]}"
-    echo "✅ Aplicaciones de Flathub instaladas."
+    echo "[+] Flatpak applications installed."
 }
 
-# --- 3. Lógica de Perfil (No-interactiva) ---
-# Construye las listas de instalación basadas en $PROFILE
+# --- 3. Profile Logic (Non-Interactive) ---
+# Build the installation lists based on $PROFILE
 
 declare -a final_flatpak_list
 declare -a final_native_list
 
-echo "-> Procesando perfil '$PROFILE' para la selección de apps..."
+echo "-> Processing profile '$PROFILE' for app selection..."
 case "$PROFILE" in
     "minimal")
         final_flatpak_list=( "${apps_flatpak_minimal[@]}" )
@@ -118,21 +118,21 @@ case "$PROFILE" in
         fi
         ;;
     "terminal")
-        # Lista de flatpak vacía
+        # Flatpak list is empty
         if [ "$DISTRO" == "arch" ]; then final_native_list=( "${native_minimal_arch[@]}" "${native_extras_arch[@]}" ); else final_native_list=( "${native_minimal_debian[@]}" "${native_extras_debian[@]}" ); fi
         ;;
     *)
-        echo "⚠️  Perfil '$PROFILE' desconocido."
+        echo "[!] Unknown profile '$PROFILE'."
         ;;
 esac
 
-# --- 4. Ejecución de Instalación ---
+# --- 4. Installation Execution ---
 install_flatpaks "${final_flatpak_list[@]}"
 install_native_utils "${final_native_list[@]}"
 
-# --- 5. Finalización de Flatpak ---
-# Sigue siendo útil para actualizar los metadatos del sistema
-echo "⚙️  Actualizando la base de datos de AppStream de Flatpak..."
+# --- 5. Flatpak Finalization ---
+# Still useful for updating system metadata
+echo "[*] Updating Flatpak AppStream database..."
 flatpak update --appstream
 
-echo "--- Módulo 2 Finalizado ---"
+echo "--- Module 2 Finished ---"
