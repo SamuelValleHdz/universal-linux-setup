@@ -8,22 +8,40 @@ echo "--- Module 1: Base System Setup ---"
 pkgs_build_arch=(base-devel)
 pkgs_build_debian=(build-essential)
 
-# Base packages
-# 'pipx' has been removed from the Arch list as per your change.
+# Base packages (Removed pipx/python-venv as per previous fix)
 pkgs_essentials_arch=(git curl zsh kitty bluez bluez-utils python-pip)
 pkgs_essentials_debian=(git curl zsh kitty bluez software-properties-common python3-pip python3-venv pipx)
 
-# --- Native Package Installation ---
-echo "[*] Installing essential system packages (incl. zsh, kitty, and pip)..."
+# --- Repository Configuration (Moved from Mod 04) ---
+# We need this BEFORE installing apps like Steam.
 
 if [ "$DISTRO" == "arch" ]; then
-    sudo pacman -Syu --noconfirm --needed "${pkgs_build_arch[@]}" "${pkgs_essentials_arch[@]}"
+    echo "[*] Configuring Arch repositories..."
+    # Enable 'multilib' for Steam (32-bit support)
+    if grep -q "#\[multilib\]" /etc/pacman.conf; then
+        echo "-> Enabling Multilib repository (required for Steam)..."
+        sudo sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
+    fi
+    # Update database immediately
+    sudo pacman -Syy
+
 elif [ "$DISTRO" == "debian" ]; then
+    echo "[*] Configuring Ubuntu/Debian repositories..."
+    # Enable 'multiverse' (often needed for Steam)
+    sudo add-apt-repository -y multiverse
     sudo apt-get update
+fi
+
+# --- Native Package Installation ---
+echo "[*] Installing essential system packages..."
+
+if [ "$DISTRO" == "arch" ]; then
+    sudo pacman -S --noconfirm --needed "${pkgs_build_arch[@]}" "${pkgs_essentials_arch[@]}"
+elif [ "$DISTRO" == "debian" ]; then
     sudo apt-get install -y "${pkgs_build_debian[@]}" "${pkgs_essentials_debian[@]}"
     
     # Add Fastfetch PPA
-    echo "[*] Adding Fastfetch PPA for Ubuntu/Debian..."
+    echo "[*] Adding Fastfetch PPA..."
     sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
     sudo apt-get update
 fi
@@ -43,7 +61,7 @@ if [ "$DISTRO" == "arch" ]; then
     fi
 fi
 
-# --- Flatpak Installation & Setup ---
+# --- Flatpak Installation ---
 if ! command -v flatpak &> /dev/null; then
     echo "[*] Installing Flatpak..."
     if [ "$DISTRO" == "arch" ]; then
