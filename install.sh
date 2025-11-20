@@ -48,8 +48,7 @@ if [ "$CURRENT_DIR" != "$DEST_PATH" ]; then
     
     mkdir -p "$DEST_BASE"
     
-    # This command will now work on Arch because
-    # we just installed 'rsync'
+    # This command will now work on Arch because we just installed 'rsync'
     rsync -a --delete "$CURRENT_DIR/" "$DEST_PATH/"
     
     echo "[+] Relocation complete. Restarting script from new location..."
@@ -62,8 +61,6 @@ fi
 
 # --- 4. Main Configuration ---
 echo "--- Script running from permanent location ($DEST_PATH) ---"
-# Export the absolute WORKDIR so modules (like 04)
-# can use it to create aliases (like 'update')
 export WORKDIR="$CURRENT_DIR" # $CURRENT_DIR is now $DEST_PATH
 
 # --- 5. User Interface (TUI) for Profile Selection ---
@@ -72,16 +69,19 @@ echo "Welcome to the Installation Script."
 echo "Please select the desired installation profile:"
 echo ""
 
+# ==== ACTUALIZACIÓN DE MENÚ ====
 options=(
     "Minimal (Firefox, VLC, VSCode)"
-    "Work (Minimal + Obsidian, OnlyOffice)"
+    "Work (Minimal + Office, Brave, KeePassXC, qBittorrent)" # Actualizado
     "Creative (Minimal + Inkscape, Krita)"
-    "Gaming (Minimal + Lutris, Heroic, Prism)"
+    "Gaming (Minimal + Steam, Discord, Lutris, Heroic)"      # Actualizado
     "Virtualization (Minimal + VirtualBox)"
     "Full (Install EVERYTHING)"
     "Terminal Only (Native utilities)"
     "Exit"
 )
+# ===============================
+
 PS3="Choose an option (1-8): "
 select choice in "${options[@]}"; do
     case $choice in
