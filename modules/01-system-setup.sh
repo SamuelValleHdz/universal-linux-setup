@@ -8,27 +8,29 @@ echo "--- Module 1: Base System Setup ---"
 pkgs_build_arch=(base-devel)
 pkgs_build_debian=(build-essential)
 
-# Base packages (Removed pipx/python-venv as per previous fix)
+# Base packages
 pkgs_essentials_arch=(git curl zsh kitty bluez bluez-utils python-pip)
 pkgs_essentials_debian=(git curl zsh kitty bluez software-properties-common python3-pip python3-venv pipx)
 
-# --- Repository Configuration (Moved from Mod 04) ---
-# We need this BEFORE installing apps like Steam.
-
+# --- Repository Configuration ---
 if [ "$DISTRO" == "arch" ]; then
     echo "[*] Configuring Arch repositories..."
-    # Enable 'multilib' for Steam (32-bit support)
     if grep -q "#\[multilib\]" /etc/pacman.conf; then
         echo "-> Enabling Multilib repository (required for Steam)..."
         sudo sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
     fi
-    # Update database immediately
     sudo pacman -Syy
 
 elif [ "$DISTRO" == "debian" ]; then
     echo "[*] Configuring Ubuntu/Debian repositories..."
-    # Enable 'multiverse' (often needed for Steam)
+    # Enable 'multiverse' (required for Steam)
     sudo add-apt-repository -y multiverse
+
+    # Habilitar arquitectura de 32 bits (Steam la necesita obligatoriamente)
+    echo "-> Enabling 32-bit architecture (i386)..."
+    sudo dpkg --add-architecture i386
+    # ===============================
+    
     sudo apt-get update
 fi
 
@@ -40,7 +42,6 @@ if [ "$DISTRO" == "arch" ]; then
 elif [ "$DISTRO" == "debian" ]; then
     sudo apt-get install -y "${pkgs_build_debian[@]}" "${pkgs_essentials_debian[@]}"
     
-    # Add Fastfetch PPA
     echo "[*] Adding Fastfetch PPA..."
     sudo add-apt-repository -y ppa:zhangsongcui3371/fastfetch
     sudo apt-get update

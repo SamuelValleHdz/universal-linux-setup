@@ -5,13 +5,12 @@ echo "--- Module 2: Application Installation (Profile: $PROFILE) ---"
 
 # --- 1. Application Lists ---
 
-# (Flatpak Lists)
+# (Flatpak Lists - Sin cambios)
 apps_flatpak_minimal=(
     org.mozilla.firefox
     org.videolan.VLC
     com.visualstudio.code
 )
-
 apps_flatpak_work=(
     md.obsidian.Obsidian
     org.onlyoffice.desktopeditors
@@ -19,12 +18,10 @@ apps_flatpak_work=(
     org.keepassxc.KeePassXC
     org.qbittorrent.qBittorrent
 )
-
 apps_flatpak_creative=(
     org.inkscape.Inkscape
     org.kde.krita
 )
-
 apps_flatpak_gaming=(
     net.lutris.Lutris
     com.heroicgameslauncher.hgl
@@ -35,17 +32,17 @@ apps_flatpak_gaming=(
 # (Native Lists)
 native_minimal_arch=(btop nsnake fastfetch)
 native_minimal_debian=(btop nsnake fastfetch)
-
 native_extras_arch=(hollywood asciiquarium)
 native_extras_debian=(hollywood)
-
 native_virtualization_arch=(virtualbox virtualbox-host-dkms virtualbox-ext-oracle)
 native_virtualization_debian=(virtualbox virtualbox-dkms)
 
 # NEW: Native Gaming (Steam)
-# We use native Steam to avoid Flatpak sandbox issues
 native_gaming_arch=(steam)
-native_gaming_debian=(steam)
+# ==== CAMBIO AQUÍ ====
+# Usamos 'steam-installer' en Ubuntu/Debian para mayor compatibilidad
+native_gaming_debian=(steam-installer)
+# =====================
 
 # --- 2. Installation Functions ---
 
@@ -103,7 +100,6 @@ case "$PROFILE" in
         ;;
     "gaming")
         final_flatpak_list=( "${apps_flatpak_minimal[@]}" "${apps_flatpak_gaming[@]}" )
-        # Added native_gaming (Steam) list here
         if [ "$DISTRO" == "arch" ]; then 
             final_native_list=( "${native_minimal_arch[@]}" "${native_extras_arch[@]}" "${native_gaming_arch[@]}" )
         else 
@@ -120,7 +116,6 @@ case "$PROFILE" in
         ;;
     "full")
         final_flatpak_list=( "${apps_flatpak_minimal[@]}" "${apps_flatpak_work[@]}" "${apps_flatpak_creative[@]}" "${apps_flatpak_gaming[@]}" )
-        # Added native_gaming (Steam) list here
         if [ "$DISTRO" == "arch" ]; then
             final_native_list=( "${native_minimal_arch[@]}" "${native_extras_arch[@]}" "${native_virtualization_arch[@]}" "${native_gaming_arch[@]}" )
         else
