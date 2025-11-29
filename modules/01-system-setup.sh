@@ -9,28 +9,24 @@ pkgs_build_arch=(base-devel)
 pkgs_build_debian=(build-essential)
 
 # Base packages
-pkgs_essentials_arch=(git curl zsh kitty bluez bluez-utils python-pip)
-pkgs_essentials_debian=(git curl zsh kitty bluez software-properties-common python3-pip python3-venv pipx)
+# Agregamos 'pciutils' para detectar hardware en el siguiente modulo
+pkgs_essentials_arch=(git curl zsh kitty bluez bluez-utils python-pip python-pipx pciutils)
+pkgs_essentials_debian=(git curl zsh kitty bluez software-properties-common python3-pip python3-venv pipx pciutils)
 
 # --- Repository Configuration ---
 if [ "$DISTRO" == "arch" ]; then
     echo "[*] Configuring Arch repositories..."
     if grep -q "#\[multilib\]" /etc/pacman.conf; then
-        echo "-> Enabling Multilib repository (required for Steam)..."
+        echo "-> Enabling Multilib repository (required for Steam/Wine)..."
         sudo sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
     fi
     sudo pacman -Syy
 
 elif [ "$DISTRO" == "debian" ]; then
     echo "[*] Configuring Ubuntu/Debian repositories..."
-    # Enable 'multiverse' (required for Steam)
     sudo add-apt-repository -y multiverse
-
-    # Habilitar arquitectura de 32 bits (Steam la necesita obligatoriamente)
     echo "-> Enabling 32-bit architecture (i386)..."
     sudo dpkg --add-architecture i386
-    # ===============================
-    
     sudo apt-get update
 fi
 

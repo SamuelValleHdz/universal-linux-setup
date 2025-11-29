@@ -58,6 +58,30 @@ else
     echo "-> VirtualBox is not installed, skipping tweaks."
 fi
 
+# --- Kitty Theme Setup ---
+if command -v kitty &> /dev/null; then
+    echo "[*] Setting Kitty theme to 'Catppuccin-Macchiato'..."
+    mkdir -p "$HOME/.config/kitty"
+    
+    # 1. Volcar el tema 'Catppuccin-Macchiato'
+    # Nota: Requiere que kitty-themes esté disponible o internet para bajarlo
+    if kitty +kitten themes --dump-theme "Catppuccin-Macchiato" > "$HOME/.config/kitty/current-theme.conf" 2>/dev/null; then
+        
+        # 2. Asegurar que kitty.conf incluya este tema
+        KITTY_CONF="$HOME/.config/kitty/kitty.conf"
+        touch "$KITTY_CONF"
+        
+        if ! grep -q "include current-theme.conf" "$KITTY_CONF"; then
+            echo "" >> "$KITTY_CONF"
+            echo "# --- Theme configured by install script ---" >> "$KITTY_CONF"
+            echo "include current-theme.conf" >> "$KITTY_CONF"
+        fi
+        echo "[+] Theme 'Catppuccin-Macchiato' applied successfully."
+    else
+        echo "[!] Warning: Could not find theme 'Catppuccin-Macchiato'. Check internet connection or theme name."
+    fi
+fi
+
 # --- Custom Shell Alias Setup ---
 echo "[*] Configuring custom shell aliases..."
 ALIAS_SCRIPT_PATH="$WORKDIR/modules/update-flatpak-aliases.sh"
