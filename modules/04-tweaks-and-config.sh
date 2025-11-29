@@ -27,12 +27,10 @@ fi
 # --- Arch-Specific Tweaks ---
 if [ "$DISTRO" == "arch" ]; then
     echo "[*] Applying Arch-specific tweaks..."
-    # Enable 'ILoveCandy' in pacman
     if ! grep -q "ILoveCandy" /etc/pacman.conf; then
         sudo sed -i '/#Color/a ILoveCandy' /etc/pacman.conf
         echo "[+] ILoveCandy enabled!"
     fi
-    # Note: Multilib logic was moved to Module 01
 fi
 
 # --- VirtualBox Tweaks ---
@@ -41,21 +39,7 @@ if command -v virtualbox &> /dev/null; then
     if ! id -nG "$USER" | grep -q "vboxusers"; then
         sudo usermod -aG vboxusers "$USER"
         echo "[+] User $USER added to 'vboxusers' group."
-    else
-        echo "[+] User $USER is already in 'vboxusers' group."
     fi
-    
-    if [ "$DISTRO" == "debian" ]; then
-        if ! dpkg -l | grep -q "virtualbox-ext-pack"; then
-            echo "-------------------------------------------------------------------"
-            echo "[!] MANUAL ACTION REQUIRED (VirtualBox)"
-            echo "The 'Extension Pack' (for USB) could not be installed automatically."
-            echo "Please run: sudo apt install virtualbox-ext-pack"
-            echo "-------------------------------------------------------------------"
-        fi
-    fi
-else
-    echo "-> VirtualBox is not installed, skipping tweaks."
 fi
 
 # --- Kitty Theme Setup ---
@@ -64,7 +48,6 @@ if command -v kitty &> /dev/null; then
     mkdir -p "$HOME/.config/kitty"
     
     # 1. Volcar el tema 'Catppuccin-Macchiato'
-    # Nota: Requiere que kitty-themes esté disponible o internet para bajarlo
     if kitty +kitten themes --dump-theme "Catppuccin-Macchiato" > "$HOME/.config/kitty/current-theme.conf" 2>/dev/null; then
         
         # 2. Asegurar que kitty.conf incluya este tema
@@ -86,6 +69,13 @@ fi
 echo "[*] Configuring custom shell aliases..."
 ALIAS_SCRIPT_PATH="$WORKDIR/modules/update-flatpak-aliases.sh"
 
+# --- FIX: Asegurar permisos de ejecución aquí mismo ---
+if [ -f "$ALIAS_SCRIPT_PATH" ]; then
+    chmod +x "$ALIAS_SCRIPT_PATH"
+    echo "[+] Ensured execution permissions for alias generator."
+fi
+# -----------------------------------------------------
+
 if ! grep -q "# --- End of custom aliases ---" "$HOME/.zshrc"; then
     echo "-> Adding custom alias block to .zshrc..."
     
@@ -95,6 +85,19 @@ if ! grep -q "# --- End of custom aliases ---" "$HOME/.zshrc"; then
 alias apt='sudo apt'
 alias pacman='sudo pacman'
 alias yay='yay'
+
+# --- Python 'Quick & Dirty' Environment ---
+export PIP_REQUIRE_VIRTUALENV=false
+pipi() {
+    if [ ! -d "$HOME/.dev_env" ]; then
+        echo "Creando entorno global en ~/.dev_env..."
+        python -m venv "$HOME/.dev_env"
+    fi
+    "$HOME/.dev_env/bin/pip" "$@"
+}
+pythoni() {
+    "$HOME/.dev_env/bin/python" "$@"
+}
 EOF
     
     if [ "$DISTRO" == "arch" ]; then
@@ -119,7 +122,7 @@ EOF
     echo "# --- End of custom aliases ---" >> "$HOME/.zshrc"
     echo "[+] Custom aliases added to .zshrc"
 else
-    echo "[+] Custom alias block already exists in .zshrc. Skipping."
+    echo "[+] Custom alias block already exists. Skipping."
 fi
 
 echo "--- Module 4 Finished ---"
