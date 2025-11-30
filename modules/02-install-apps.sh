@@ -15,6 +15,7 @@ apps_flatpak_work=(
     md.obsidian.Obsidian
     org.onlyoffice.desktopeditors
     com.brave.Browser
+    com.spotify.Client
     org.keepassxc.KeePassXC
     org.qbittorrent.qBittorrent
 )
