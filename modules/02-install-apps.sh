@@ -9,7 +9,6 @@ echo "--- Module 2: Application Installation (Profile: $PROFILE) ---"
 apps_flatpak_minimal=(
     org.mozilla.firefox
     org.videolan.VLC
-    com.visualstudio.code
 )
 apps_flatpak_work=(
     md.obsidian.Obsidian
@@ -22,11 +21,6 @@ apps_flatpak_work=(
 apps_flatpak_creative=(
     org.inkscape.Inkscape
     org.kde.krita
-)
-apps_flatpak_gaming=(
-    net.lutris.Lutris
-    com.heroicgameslauncher.hgl
-    org.prismlauncher.PrismLauncher
     com.discordapp.Discord
 )
 
@@ -35,11 +29,25 @@ native_minimal_arch=(btop nsnake fastfetch)
 native_minimal_debian=(btop nsnake fastfetch)
 native_extras_arch=(hollywood asciiquarium)
 native_extras_debian=(hollywood)
-native_virtualization_arch=(virtualbox virtualbox-host-dkms virtualbox-ext-oracle)
+
+native_virtualization_arch=(
+    virtualbox 
+    virtualbox-host-dkms
+    virtualbox-guest-iso 
+    vboxmanage extpack install path-to-extension-pack
+
+)
 native_virtualization_debian=(virtualbox virtualbox-dkms)
 
 # NEW: Native Gaming (Steam)
-native_gaming_arch=(steam)
+native_gaming_arch=(
+    steam
+    lutris
+    prismlauncher
+    wine-staging
+    winetricks
+    heroic-games-launcher-bin
+)
 # ==== CAMBIO AQUÍ ====
 # Usamos 'steam-installer' en Ubuntu/Debian para mayor compatibilidad
 native_gaming_debian=(steam-installer)
@@ -114,6 +122,7 @@ case "$PROFILE" in
         else
             final_native_list=( "${native_minimal_debian[@]}" "${native_virtualization_debian[@]}" )
         fi
+        sudo usermod -aG vboxusers $USER
         ;;
     "full")
         final_flatpak_list=( "${apps_flatpak_minimal[@]}" "${apps_flatpak_work[@]}" "${apps_flatpak_creative[@]}" "${apps_flatpak_gaming[@]}" )

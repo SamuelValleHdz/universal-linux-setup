@@ -105,7 +105,6 @@ sleep 2
 # Ordered list of modules to execute
 modules=(
     "01-system-setup.sh"
-    "01-gpu-setup.sh"     
     "02-install-apps.sh"
     "03-terminal-setup.sh"
     "04-tweaks-and-config.sh"
