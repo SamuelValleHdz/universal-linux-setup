@@ -83,7 +83,7 @@ if ! grep -q "# --- End of custom aliases ---" "$HOME/.zshrc"; then
 
 # --- Custom Aliases (Added by 04-tweaks-and-config.sh) ---
 alias apt='sudo apt'
-alias pacman='sudo pacman'
+alias pacman='sudo pacman'  
 
 # --- Python 'Quick & Dirty' Environment ---
 export PIP_REQUIRE_VIRTUALENV=false

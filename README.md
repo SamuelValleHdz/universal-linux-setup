@@ -57,6 +57,6 @@ The script automatically sets up an update alias for your convenience:
 - **Arch Linux:** Type `syu` or `update` to update system packages, Flatpaks, and regenerate app aliases.
 - **Debian/Ubuntu:** Type `update` to do the same.
 
-## Estras
+## Extras
 
 Wallpaper : https://wallhaven.cc/w/p9gr2p
