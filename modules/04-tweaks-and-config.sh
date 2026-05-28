@@ -2,6 +2,7 @@
 # Enable strict mode
 set -e
 echo "--- Module 4: Tweaks and Personal Config ---"
+echo "[*] Distro: $PRETTY_NAME ($DISTRO_ID) | Family: $DISTRO_FAMILY"
 
 # --- Dotfile Copying ---
 CONFIG_DIR="$WORKDIR/config"
@@ -25,7 +26,7 @@ else
 fi
 
 # --- Arch-Specific Tweaks ---
-if [ "$DISTRO" == "arch" ]; then
+if [ "$DISTRO_FAMILY" == "arch" ]; then
     echo "[*] Applying Arch-specific tweaks..."
     if ! grep -q "ILoveCandy" /etc/pacman.conf; then
         sudo sed -i '/#Color/a ILoveCandy' /etc/pacman.conf
@@ -99,20 +100,22 @@ pythoni() {
 }
 EOF
     
-    if [ "$DISTRO" == "arch" ]; then
+    if [ "$DISTRO_FAMILY" == "arch" ]; then
         echo "-> Adding 'syu' and 'update' aliases for Arch."
+        # Detect AUR helper at alias-creation time for the update command
+        if command -v paru &>/dev/null; then _aur="paru"; elif command -v yay &>/dev/null; then _aur="yay"; else _aur="sudo pacman"; fi
         cat << EOF >> "$HOME/.zshrc"
 
 # --- Update Aliases (Arch) ---
-alias syu="echo '[>] Updating system (Yay), Flatpaks, and regenerating aliases...'; yay -Syu && flatpak update -y && \"$ALIAS_SCRIPT_PATH\""
+alias syu="echo '[>] Updating system ($_aur), Flatpaks, and regenerating aliases...'; $_aur -Syu && flatpak update -y && '$ALIAS_SCRIPT_PATH'"
 alias update='syu'
 EOF
-    elif [ "$DISTRO" == "debian" ]; then
+    elif [ "$DISTRO_FAMILY" == "debian" ]; then
         echo "-> Adding 'update' and 'syu' aliases for Debian."
         cat << EOF >> "$HOME/.zshrc"
 
 # --- Update Aliases (Debian) ---
-alias update="echo '[>] Updating system (Apt), Flatpaks, and regenerating aliases...'; sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y && flatpak update -y && \"$ALIAS_SCRIPT_PATH\""
+alias update="echo '[>] Updating system (Apt), Flatpaks, and regenerating aliases...'; sudo apt update && sudo apt upgrade -y && sudo apt autoremove -y && flatpak update -y && '$ALIAS_SCRIPT_PATH'"
 alias syu='update'
 EOF
     fi

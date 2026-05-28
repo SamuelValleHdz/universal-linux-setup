@@ -5,10 +5,10 @@ set -e
 echo "--- Module 3: Terminal Setup ---"
 
 # --- Permission Fix ---
-# Fixes 'permission denied: /home/sam/.local/bin'
-echo "[*] Verifying permissions for /home/$USER/.local/bin..."
+# Fixes 'permission denied: /home/$USER/.local/bin'
+echo "[*] Verifying permissions for $HOME/.local/bin..."
 mkdir -p "$HOME/.local/bin"
-sudo chown -R $USER:$USER "$HOME/.local/bin"
+sudo chown -R "$USER":"$USER" "$HOME/.local/bin"
 echo "[+] .local/bin permissions corrected."
 
 # --- Zsh and Oh My Zsh ---
@@ -18,7 +18,7 @@ if [ "$SHELL" != "/bin/zsh" ]; then
     if chsh -s "$ZSH_PATH"; then
         echo "[+] Shell changed to Zsh. Please log out and back in."
     else
-        echo "[!] Could not change shell."
+        echo "[!] Could not change shell automatically. Run: chsh -s $(which zsh)"
     fi
 else
     echo "[+] Default shell is already Zsh."
@@ -26,7 +26,7 @@ fi
 
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
     echo "[*] Installing Oh My Zsh..."
-    # --unattended makes it non-interactive
+    # --unattended makes it non-interactive and does not switch shell (we do it above)
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
     echo "[+] Oh My Zsh installed."
 else
@@ -35,46 +35,48 @@ fi
 
 # --- Zsh Plugins ---
 ZSH_CUSTOM=${ZSH_CUSTOM:-~/.oh-my-zsh/custom}
+
 if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
     echo "[*] Installing zsh-autosuggestions..."
     git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 else
     echo "[+] zsh-autosuggestions is already installed."
 fi
+
 if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
     echo "[*] Installing zsh-syntax-highlighting..."
     git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 else
     echo "[+] zsh-syntax-highlighting is already installed."
 fi
-# Replace the 'plugins=(git)' line with the full list
-sed -i.bak 's/^plugins=(git)$/plugins=(git zsh-autosuggestions zsh-syntax-highlighting)/' ~/.zshrc
-echo "[+] Zsh plugins activated in .zshrc"
 
-# --- Neovim / LunarVim Environment ---
-echo "[*] Installing LunarVim dependencies..."
-if [ "$DISTRO" == "arch" ]; then
-    sudo pacman -S --noconfirm --needed neovim nodejs npm
-elif [ "$DISTRO" == "debian" ]; then
-    sudo apt-get install -y neovim nodejs npm
-fi
+# Activate plugins in .zshrc robustly.
+# This approach reads the current plugin list, adds the new plugins if they are
+# not already present, then rewrites the line — safe regardless of existing plugins.
+echo "[*] Activating Zsh plugins in .zshrc..."
+ZSHRC="$HOME/.zshrc"
+PLUGINS_TO_ADD=("zsh-autosuggestions" "zsh-syntax-highlighting")
 
-# Install LunarVim (this is idempotent)
-if ! command -v lvim &> /dev/null; then
-    echo "[*] Installing LunarVim (lvim)..."
-    LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh)
-    echo "[+] LunarVim installed."
-else
-    echo "[+] LunarVim (lvim) is already installed."
-fi
+# Extract current plugin list (e.g. "git z docker")
+# Use sed to strip the literal 'plugins=(' prefix and ')' suffix — NOT tr -d,
+# which would delete individual characters and corrupt plugin names.
+current_plugins=$(sed -n 's/^plugins=(\(.*\))/\1/p' "$ZSHRC" | head -1 | xargs)
+
+updated_plugins="$current_plugins"
+for plugin in "${PLUGINS_TO_ADD[@]}"; do
+    if ! echo " $updated_plugins " | grep -q " $plugin "; then
+        updated_plugins="$updated_plugins $plugin"
+    fi
+done
+# Trim and write back
+updated_plugins=$(echo "$updated_plugins" | xargs)
+sed -i.bak "s/^plugins=(.*)/plugins=($updated_plugins)/" "$ZSHRC"
+echo "[+] Zsh plugins activated: ($updated_plugins)"
 
 # --- $PATH and Alias Configuration ---
-echo "[*] Configuring $PATH and aliases in .zshrc..."
+echo "[*] Configuring \$PATH and aliases in .zshrc..."
 
 # --- pipx ---
-# This section is now only relevant for Debian/Ubuntu, but
-# the 'if ! grep' check makes it safe for Arch (it will just be skipped).
-# The redirect '&>/dev/null' silences all output to fix eval errors.
 if ! grep -q 'eval "$(pipx ensurepath &>/dev/null)"' "$HOME/.zshrc"; then
     # Remove old, broken lines if they exist
     sed -i '/pipx ensurepath/d' "$HOME/.zshrc"
@@ -86,19 +88,19 @@ fi
 
 # --- .local/bin (lvim), Flatpak (auto), and Aliases (static) ---
 # Use a marker to be idempotent
-if ! grep -q "# --- End of $PATH and Alias config ---" "$HOME/.zshrc"; then
-    echo "-> Adding $PATH and alias-loading block..."
+if ! grep -q "# --- End of \$PATH and Alias config ---" "$HOME/.zshrc"; then
+    echo "-> Adding \$PATH and alias-loading block..."
     cat << 'EOF' >> ~/.zshrc
 
 # --- $PATH Configuration ---
-# (Block added by the global-linux-desktop script)
+# (Block added by the universal-linux-setup script)
 
-# Add local bin folder (for lvim)
+# Add local bin folder
 if [ -d "$HOME/.local/bin" ] && [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     export PATH="$PATH:$HOME/.local/bin"
 fi
 
-# Add Flatpak bin folders (System's automatic attempt)
+# Add Flatpak bin folders
 if [ -d "/var/lib/flatpak/exports/bin" ] && [[ ":$PATH:" != *":/var/lib/flatpak/exports/bin:"* ]]; then
     export PATH="$PATH:/var/lib/flatpak/exports/bin"
 fi
@@ -114,8 +116,9 @@ if [ -f "$ALIAS_FILE_PATH" ]; then
 fi
 # --- End of $PATH and Alias config ---
 EOF
-    echo "[+] $PATH and Flatpak aliases configured in .zshrc"
+    echo "[+] \$PATH and Flatpak aliases configured in .zshrc"
 else
-    echo "[+] $PATH and Alias block already exists in .zshrc. Skipping."
+    echo "[+] \$PATH and Alias block already exists in .zshrc. Skipping."
 fi
+
 echo "--- Module 3 Finished ---"
