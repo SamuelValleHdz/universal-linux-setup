@@ -196,20 +196,22 @@ echo -e ""
 
 options=(
     "Minimal" "Firefox"
-    "Work" "Minimal + VS Code (Native), Brave, Obsidian, OnlyOffice, Spotify, KeePassXC, qBittorrent"
+    "Work" "Minimal + VS Code, Antigravity IDE, Brave, Obsidian, OnlyOffice, Spotify, KeePassXC, qBittorrent"
     "Creative" "Minimal + Inkscape, Krita, Discord"
     "Gaming" "Minimal + Steam, Discord, Lutris, Heroic"
-    "Virtualization" "Minimal + VirtualBox"
+    "3D Printing" "Minimal + Bambu Studio, OrcaSlicer"
+    "Virtualization" "Minimal + VirtualBox, QEMU, virt-manager"
     "Full" "Install EVERYTHING (all native & flatpak apps)"
     "Terminal Only" "Native terminal utilities & tools"
+    "Custom" "Choose which categories to install"
     "Exit" "Cancel setup and exit"
 )
 
-for i in {1..8}; do
+for i in {1..10}; do
     idx=$(( (i - 1) * 2 ))
     title="${options[idx]}"
     desc="${options[idx+1]}"
-    if [ $i -eq 8 ]; then
+    if [ $i -eq 10 ]; then
         echo -e "  ${RED}[$i]${NC} ${BOLD}$title${NC} - $desc"
     else
         echo -e "  ${CYAN}[$i]${NC} ${BOLD}$title${NC}"
@@ -219,17 +221,19 @@ done
 
 echo ""
 while true; do
-    read -rp "  Select an option [1-8]: " choice_num
+    read -rp "  Select an option [1-10]: " choice_num
     case "$choice_num" in
         1) export PROFILE="minimal"; break ;;
         2) export PROFILE="work"; break ;;
         3) export PROFILE="creative"; break ;;
         4) export PROFILE="gaming"; break ;;
-        5) export PROFILE="virtualization"; break ;;
-        6) export PROFILE="full"; break ;;
-        7) export PROFILE="terminal"; break ;;
-        8) echo -e "\n  ${RED}Exiting installation.${NC}\n"; exit 0 ;;
-        *) echo -e "  ${RED}[!] Invalid option: $choice_num. Please choose 1-8.${NC}" ;;
+        5) export PROFILE="3dprint"; break ;;
+        6) export PROFILE="virtualization"; break ;;
+        7) export PROFILE="full"; break ;;
+        8) export PROFILE="terminal"; break ;;
+        9) export PROFILE="custom"; break ;;
+        10) echo -e "\n  ${RED}Exiting installation.${NC}\n"; exit 0 ;;
+        *) echo -e "  ${RED}[!] Invalid option: $choice_num. Please choose 1-10.${NC}" ;;
     esac
 done
 

@@ -91,12 +91,14 @@ universal-linux-setup/
 | Profile | Included Apps |
 |---------|---------------|
 | **Minimal** | Firefox |
-| **Work** | Minimal + VS Code (Native), Brave, Obsidian, OnlyOffice, Spotify, KeePassXC, qBittorrent |
+| **Work** | Minimal + VS Code (Native), Antigravity IDE, Brave, Obsidian, OnlyOffice, Spotify, KeePassXC, qBittorrent |
 | **Creative** | Minimal + Inkscape, Krita, Discord |
 | **Gaming** | Minimal + Steam, Discord, Lutris, Heroic, Wine |
-| **Virtualization** | Minimal + VirtualBox |
+| **3D Printing** | Minimal + Bambu Studio, OrcaSlicer |
+| **Virtualization** | Minimal + VirtualBox, QEMU, virt-manager |
 | **Full** | Everything above |
 | **Terminal Only** | btop, fastfetch, nsnake, and extras |
+| **Custom** | Interactive category picker — choose exactly what you need |
 
 ## Aliases & Updates
 
